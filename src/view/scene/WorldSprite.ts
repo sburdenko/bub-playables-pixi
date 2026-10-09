@@ -30,6 +30,10 @@ export class WorldSprite extends Container {
 
   /** Swaps the frame; the anchor follows the new frame's pivot, which Pixi only applies in the constructor. */
   setTexture(textureId: string): void {
+    if (textureId === this._textureId) {
+      return;
+    }
+
     const texture = this._textures.get(textureId);
     this._textureId = textureId;
     this._sprite.texture = texture;

@@ -1,66 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { rect } from '../../../src/core/math/Rect';
-import type { Vec2 } from '../../../src/core/math/Vec2';
-import type { BubbleColor } from '../../../src/domain/board/BubbleColor';
 import { cell } from '../../../src/domain/board/GridCell';
 import { parseLevel } from '../../../src/domain/level/Level';
 import { OPENING_LEVEL_ROWS } from '../../../src/domain/level/openingLevel';
 import { BoardSystem } from '../../../src/game/board/BoardSystem';
-import type { IBubbleView, IBubbleViewFactory } from '../../../src/game/ports/IBubbleView';
+import { FakeFactory } from './fakes';
 
 const DESIGN_RECT = rect(-3.79, -7.2, 7.58, 16.4);
 const TALL_DESIGN_RECT = rect(-3.79, -9, 7.58, 20);
-
-class FakeBubbleView implements IBubbleView {
-  readonly color: BubbleColor;
-  layoutScale = 0;
-  rest: Vec2 | null = null;
-  row: number | null = null;
-  spawnCount = 0;
-  impacts: { direction: Vec2; strength: number }[] = [];
-  isDestroyed = false;
-
-  constructor(color: BubbleColor) {
-    this.color = color;
-  }
-
-  get radius(): number {
-    return 0.35 * this.layoutScale;
-  }
-
-  setLayoutScale(scale: number): void {
-    this.layoutScale = scale;
-  }
-
-  place(rest: Vec2, row: number): void {
-    this.rest = rest;
-    this.row = row;
-    this.spawnCount++;
-  }
-
-  setRestPosition(rest: Vec2): void {
-    this.rest = rest;
-  }
-
-  applyImpact(direction: Vec2, strength: number): void {
-    this.impacts.push({ direction, strength });
-  }
-
-  destroy(): void {
-    this.isDestroyed = true;
-  }
-}
-
-class FakeFactory implements IBubbleViewFactory {
-  readonly created: FakeBubbleView[] = [];
-
-  create(color: BubbleColor): FakeBubbleView {
-    const view = new FakeBubbleView(color);
-    this.created.push(view);
-
-    return view;
-  }
-}
 
 describe('BoardSystem', () => {
   it('spawnsOneBubblePerFilledLevelCellOnItsGridPosition', () => {

@@ -1,8 +1,9 @@
 import { Application } from 'pixi.js';
 import { MathRandom } from '../core/random/MathRandom';
-import { computeViewportLayout } from '../domain/layout/ViewportLayout';
+import { computeViewportLayout, screenToWorld } from '../domain/layout/ViewportLayout';
 import { ASSET_MANIFEST } from '../generated/assets';
 import { loadAssets } from '../platform/assets/AssetLoader';
+import { PointerInput } from '../platform/input/PointerInput';
 import { Playable } from './Playable';
 
 const MAX_RESOLUTION = 2;
@@ -24,10 +25,14 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   exposeToDevtools(app);
 
   const textures = await loadAssets(ASSET_MANIFEST);
-  const currentLayout = () => computeViewportLayout(app.screen.width, app.screen.height);
-  const playable = new Playable(textures, new MathRandom(), currentLayout());
+  let layout = computeViewportLayout(app.screen.width, app.screen.height);
+  const pointer = new PointerInput(app.canvas, (x, y) => screenToWorld(layout, x, y));
+  const playable = new Playable(textures, new MathRandom(), pointer, layout);
   app.stage.addChild(playable.scene);
-  app.renderer.on('resize', () => playable.applyLayout(currentLayout()));
+  app.renderer.on('resize', () => {
+    layout = computeViewportLayout(app.screen.width, app.screen.height);
+    playable.applyLayout(layout);
+  });
   app.ticker.add((ticker) => playable.update(Math.min(ticker.deltaMS / 1000, MAX_DELTA_SECONDS)));
 
   return app;
