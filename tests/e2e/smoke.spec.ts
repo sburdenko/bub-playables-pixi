@@ -43,3 +43,17 @@ test('build is self-contained: no network requests besides the page', async ({ p
   const external = requests.filter((url) => !url.startsWith('data:') && !url.startsWith('blob:') && !url.endsWith('/'));
   expect(external).toEqual([]);
 });
+
+test('relayouts on rotation and resize without errors', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/');
+  await expect(page.locator('#app')).toHaveAttribute('data-state', 'ready');
+
+  for (const size of [{ width: 390, height: 844 }, { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(size);
+    await page.waitForTimeout(100);
+  }
+
+  expect(errors).toEqual([]);
+});
