@@ -111,6 +111,16 @@ describe('MatchAttackSequence', () => {
     expect(effects.bursts).toEqual(expect.arrayContaining(['enemyImpact', 'energyBurst']));
   });
 
+  it('anEmptyMatchHasNothingToPlay', () => {
+    const orb = new FakeOrb();
+    const attack = new MatchAttackSequence(orb, new FakeEnemy(), new FakeEffects());
+
+    attack.play([], 1);
+
+    expect(orb.isVisible).toBe(false);
+    expect(attack.update(1 / 60)).toBe(true);
+  });
+
   it('isFinishedWhenIdle', () => {
     const attack = new MatchAttackSequence(new FakeOrb(), new FakeEnemy(), new FakeEffects());
 

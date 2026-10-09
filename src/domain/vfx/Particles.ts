@@ -88,6 +88,17 @@ export function particleLook(particle: Particle, config: EmitterConfig): Particl
   };
 }
 
+/**
+ * Particles owed for moving `distance` at `ratePerUnit` (Unity `rateOverDistance`); the fraction left over carries
+ * into the next frame so slow movement still emits.
+ */
+export function emitAlongPath(carried: number, distance: number, ratePerUnit: number): { readonly count: number; readonly carried: number } {
+  const total = carried + distance * ratePerUnit;
+  const count = Math.floor(total);
+
+  return { count, carried: total - count };
+}
+
 export function sampleLifeCurve(curve: LifeCurve, life: number): number {
   const first = curve[0];
   if (first === undefined) {

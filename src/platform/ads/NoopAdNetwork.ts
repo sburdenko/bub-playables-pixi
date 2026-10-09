@@ -9,13 +9,9 @@ export class NoopAdNetwork implements IAdNetwork {
 
   openStore(): void {
     const url = storeUrl();
-    if (url === '') {
-      console.warn('No store URL configured (VITE_STORE_URL_IOS / VITE_STORE_URL_ANDROID).');
-
-      return;
+    if (url !== null) {
+      window.open(url, '_blank');
     }
-
-    window.open(url, '_blank');
   }
 
   notifyEnded(): void {

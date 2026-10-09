@@ -22,10 +22,6 @@ export class FakeBubbleView implements IBubbleView {
     this.color = color;
   }
 
-  get radius(): number {
-    return 0.35 * this.layoutScale;
-  }
-
   setLayoutScale(scale: number): void {
     this.layoutScale = scale;
   }
@@ -132,13 +128,17 @@ export class ScriptedPointer implements IPointerSource {
 }
 
 export function press(x: number, y: number): PointerSample {
-  return { world: vec2(x, y), pressWorld: vec2(x, y), isPressedThisFrame: true, isHeld: true, isReleasedThisFrame: false };
+  return { world: vec2(x, y), pressWorld: vec2(x, y), isPressedThisFrame: true, isHeld: true, isReleasedThisFrame: false, isCancelledThisFrame: false };
 }
 
 export function hold(x: number, y: number): PointerSample {
-  return { world: vec2(x, y), pressWorld: null, isPressedThisFrame: false, isHeld: true, isReleasedThisFrame: false };
+  return { world: vec2(x, y), pressWorld: null, isPressedThisFrame: false, isHeld: true, isReleasedThisFrame: false, isCancelledThisFrame: false };
 }
 
 export function release(x: number, y: number): PointerSample {
-  return { world: vec2(x, y), pressWorld: null, isPressedThisFrame: false, isHeld: false, isReleasedThisFrame: true };
+  return { world: vec2(x, y), pressWorld: null, isPressedThisFrame: false, isHeld: false, isReleasedThisFrame: true, isCancelledThisFrame: false };
+}
+
+export function cancel(x: number, y: number): PointerSample {
+  return { world: vec2(x, y), pressWorld: null, isPressedThisFrame: false, isHeld: false, isReleasedThisFrame: false, isCancelledThisFrame: true };
 }

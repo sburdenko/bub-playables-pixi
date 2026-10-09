@@ -67,6 +67,21 @@ describe('BoardSystem flight', () => {
     expect(settlement.landedAt?.row).toBe(0);
   });
 
+  it('aSlowFrameRateDoesNotLetTheShotPassThroughBubbles', () => {
+    const board = new BoardSystem(parseLevel(['RRRRRRRRRRR', 'RRRRRRRRRR']), new FakeFactory(), DESIGN_RECT);
+    const shot = new FakeBubbleView('blue');
+    shot.setLayoutScale(board.geometry.scale);
+    const x = board.geometry.cellPosition(cell(1, 5)).x;
+    board.launch(shot, vec2(x, -3), vec2(0, 25));
+
+    let settlement = board.update(0.1);
+    for (let frame = 0; frame < 50 && settlement === null; frame++) {
+      settlement = board.update(0.1);
+    }
+
+    expect(settlement?.landedAt?.row).toBe(2);
+  });
+
   it('projectileColourComesFromTheBoard', () => {
     const board = new BoardSystem(parseLevel(['GGG']), new FakeFactory(), DESIGN_RECT);
 

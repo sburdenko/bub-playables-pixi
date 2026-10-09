@@ -1,5 +1,6 @@
 import { centerX, type Rect } from '../../core/math/Rect';
 import { add, distance, length, normalize, scale, subtract, vec2, ZERO, type Vec2 } from '../../core/math/Vec2';
+import { BUBBLE_BASE_RADIUS } from '../../domain/board/BoardGeometry';
 import { clampPull } from '../../domain/launcher/AimMath';
 import type { IBubbleView } from '../ports/IBubbleView';
 import type { PointerSample } from '../ports/IPointerSource';
@@ -59,10 +60,16 @@ export class LauncherSystem {
       return null;
     }
 
-    const state: LauncherState = this._state.kind === 'ready' && pointer.isPressedThisFrame && this.isGrabbing(pointer.pressWorld ?? pointer.world, this._state.bubble)
+    const state: LauncherState = this._state.kind === 'ready' && pointer.isPressedThisFrame && this.isGrabbing(pointer.pressWorld ?? pointer.world)
       ? { kind: 'aiming', bubble: this._state.bubble, pull: ZERO }
       : this._state;
     if (state.kind !== 'aiming') {
+      return null;
+    }
+
+    if (pointer.isCancelledThisFrame) {
+      this.resetPull(state.bubble);
+
       return null;
     }
 
@@ -72,8 +79,8 @@ export class LauncherSystem {
     return pointer.isReleasedThisFrame ? this.release(aimed) : null;
   }
 
-  private isGrabbing(pointer: Vec2, bubble: IBubbleView): boolean {
-    return distance(pointer, this._anchor) <= bubble.radius * GRAB_RADIUS_FACTOR;
+  private isGrabbing(pointer: Vec2): boolean {
+    return distance(pointer, this._anchor) <= BUBBLE_BASE_RADIUS * this._layoutScale * GRAB_RADIUS_FACTOR;
   }
 
   private aim(bubble: IBubbleView, pointer: Vec2): AimingState {

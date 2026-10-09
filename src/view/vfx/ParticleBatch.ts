@@ -37,7 +37,6 @@ export class ParticleBatch extends Container {
   burst(random: IRandom, localOffset: Vec2 = { x: 0, y: 0 }): void {
     const born = emitBurst(this._config, localOffset, this._effectScale, random).map((particle) => ({ particle, sprite: this.createSprite() }));
     this._particles = [...this._particles, ...born];
-    this.draw();
   }
 
   update(deltaSeconds: number): void {

@@ -1,7 +1,7 @@
 import type { Container } from 'pixi.js';
 import { distance, type Vec2 } from '../../core/math/Vec2';
 import type { IRandom } from '../../core/random/IRandom';
-import type { EmitterConfig } from '../../domain/vfx/Particles';
+import { emitAlongPath, type EmitterConfig } from '../../domain/vfx/Particles';
 import type { BurstKind, IEffects, TextKind } from '../../game/ports/IAttackViews';
 import type { ITextureSource } from '../assets/ITextureSource';
 import { ENEMY_IMPACT, ENERGY_BURST, MATCH_GLOW, TRAIL_RATE_PER_UNIT, TRAIL_SCALE, TRAIL_TWINKLE, TRAILING_IMPACT } from './effectConfigs';
@@ -56,16 +56,17 @@ export class EffectsLayer implements IEffects {
     return {
       follow: (position, layoutScale) => {
         batch ??= this.addBatch(TRAIL_TWINKLE, layoutScale * TRAIL_SCALE, () => origin ?? position, true);
-        carried += origin === null ? 0 : distance(origin, position) * TRAIL_RATE_PER_UNIT;
+        const path = emitAlongPath(carried, origin === null ? 0 : distance(origin, position), TRAIL_RATE_PER_UNIT);
+        carried = path.carried;
         origin = position;
-        for (; carried >= 1; carried--) {
+        for (let index = 0; index < path.count; index++) {
           batch.burst(this._random);
         }
       },
+      // The last origin is kept so sparkles still alive stay where the bubble stopped.
       stop: () => {
         batch?.release();
         batch = null;
-        origin = null;
         carried = 0;
       },
     };

@@ -3,7 +3,7 @@
  * time from the Vite mode (`vite build --mode mraid`).
  */
 export interface IAdNetwork {
-  /** Resolves when the ad may start (SDK ready and the ad on screen). */
+  /** Called once the game is loaded and drawn; resolves when play may start (SDK ready and the ad on screen). */
   start(): Promise<void>;
   /** Sends the player to the store. Only call from a user gesture. */
   openStore(): void;

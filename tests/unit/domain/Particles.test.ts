@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { length, vec2 } from '../../../src/core/math/Vec2';
 import { SeededRandom } from '../../../src/core/random/SeededRandom';
-import { emitBurst, particleLook, sampleLifeCurve, stepParticle, type EmitterConfig, type Particle } from '../../../src/domain/vfx/Particles';
+import { emitAlongPath, emitBurst, particleLook, sampleLifeCurve, stepParticle, type EmitterConfig, type Particle } from '../../../src/domain/vfx/Particles';
 
 const CONFIG: EmitterConfig = {
   textures: ['a', 'b', 'c'],
@@ -59,6 +59,16 @@ describe('Particles', () => {
     expect(look?.size).toBeCloseTo(0.4, 10);
     expect(look?.alpha).toBeCloseTo(0.4, 10);
     expect(look?.textureIndex).toBe(1);
+  });
+
+  it('emitAlongPathCarriesTheRemainderAcrossFrames', () => {
+    const first = emitAlongPath(0, 0.05, 50);
+    const second = emitAlongPath(first.carried, 0.03, 50);
+
+    expect(first.count).toBe(2);
+    expect(first.carried).toBeCloseTo(0.5, 10);
+    expect(second.count).toBe(2);
+    expect(second.carried).toBeCloseTo(0, 10);
   });
 
   it('lifeCurveIsLinearAndClamped', () => {

@@ -1,7 +1,7 @@
-import { lerp } from '../../core/math/Scalar';
-import { add, distance, vec2, type Vec2 } from '../../core/math/Vec2';
 import { evaluateBezier, progressAtDistance, sagControl } from '../../core/math/QuadraticBezier';
-import { degreesToRadians } from '../../core/math/Scalar';
+import { degreesToRadians, lerp } from '../../core/math/Scalar';
+import { add, distance, vec2, type Vec2 } from '../../core/math/Vec2';
+import { BUBBLE_BASE_RADIUS } from '../../domain/board/BoardGeometry';
 import { travelDistance } from '../../domain/physics/Travel';
 import type { IAttack } from '../flow/TurnFlow';
 import type { IEffects, IOrbView, ITarget } from '../ports/IAttackViews';
@@ -52,7 +52,12 @@ export class MatchAttackSequence implements IAttack {
     this._effects = effects;
   }
 
+  /** Takes ownership of `matched`; an empty match has nothing to play and finishes at once. */
   play(matched: readonly IBubbleView[], layoutScale: number): void {
+    if (matched.length === 0) {
+      return;
+    }
+
     this._phase = { kind: 'gathering' };
     this._time = 0;
     this._arrived = 0;
@@ -120,7 +125,7 @@ export class MatchAttackSequence implements IAttack {
     const position = evaluateBezier(stage.start, stage.control, ORB_GATHER_POSITION, progress);
     bubble.setPosition(position);
     bubble.rotateBy(BUBBLE_SPIN_RADIANS_PER_SECOND * deltaSeconds);
-    if (progress < 1 && distance(position, ORB_GATHER_POSITION) > bubble.radius * BUBBLE_ARRIVAL_RADIUS_FACTOR) {
+    if (progress < 1 && distance(position, ORB_GATHER_POSITION) > BUBBLE_BASE_RADIUS * this._layoutScale * BUBBLE_ARRIVAL_RADIUS_FACTOR) {
       return stage;
     }
 

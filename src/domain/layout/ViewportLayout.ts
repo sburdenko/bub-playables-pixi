@@ -38,7 +38,8 @@ export function computeViewportLayout(screenWidth: number, screenHeight: number)
   const designRect = rect(CAMERA_CENTER.x - designWidth / 2, visibleRect.yMin, designWidth, visibleRect.height);
   const coverScale = Math.max(visibleRect.width / REFERENCE_WIDTH, visibleRect.height / (REFERENCE_HALF_HEIGHT * 2));
 
-  return { viewport, visibleRect, designRect, coverScale, pixelsPerUnit: screenHeight / visibleRect.height };
+  // Ad webviews can start at 0x0; a floor keeps the world-to-screen mapping invertible until they resize.
+  return { viewport, visibleRect, designRect, coverScale, pixelsPerUnit: Math.max(screenHeight, 1) / visibleRect.height };
 }
 
 /** World point → CSS pixel, for hit-testing and debugging; the renderer applies the same mapping as a transform. */
