@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Asset Gallery (dev)</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #2a2f3a;
+        color: #ddd;
+        font-family: system-ui, sans-serif;
+      }
+
+      #gallery {
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Asset gallery</h1>
+    <p>Every texture produced by <code>npm run assets</code>, as loaded by the runtime asset loader.</p>
+    <div id="gallery"></div>
+    <script type="module" src="/src/dev/assetGallery.ts"></script>
+  </body>
+</html>
