@@ -3,7 +3,7 @@ import { MathRandom } from '../core/random/MathRandom';
 import { computeViewportLayout } from '../domain/layout/ViewportLayout';
 import { ASSET_MANIFEST } from '../generated/assets';
 import { loadAssets } from '../platform/assets/AssetLoader';
-import { SceneView } from '../view/scene/SceneView';
+import { Playable } from './Playable';
 
 const MAX_RESOLUTION = 2;
 const CLEAR_COLOR = 0x000000;
@@ -24,13 +24,11 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   exposeToDevtools(app);
 
   const textures = await loadAssets(ASSET_MANIFEST);
-  const scene = new SceneView(textures, new MathRandom());
-  app.stage.addChild(scene);
-
-  const layout = () => scene.applyLayout(computeViewportLayout(app.screen.width, app.screen.height));
-  app.renderer.on('resize', layout);
-  layout();
-  app.ticker.add((ticker) => scene.update(Math.min(ticker.deltaMS / 1000, MAX_DELTA_SECONDS)));
+  const currentLayout = () => computeViewportLayout(app.screen.width, app.screen.height);
+  const playable = new Playable(textures, new MathRandom(), currentLayout());
+  app.stage.addChild(playable.scene);
+  app.renderer.on('resize', () => playable.applyLayout(currentLayout()));
+  app.ticker.add((ticker) => playable.update(Math.min(ticker.deltaMS / 1000, MAX_DELTA_SECONDS)));
 
   return app;
 }
