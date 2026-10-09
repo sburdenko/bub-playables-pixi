@@ -19,7 +19,8 @@
     "e2e": "playwright test",
     "assets:build": "tsx tools/assets/build.ts",
     "size": "tsx tools/size/check.ts",
-    "verify": "npm run assets:build && npm run lint && npm run typecheck && npm run coverage && npm run build && npm run size && npm run e2e"
+    "verify": "npm run assets:build && npm run lint && npm run typecheck && npm run coverage && npm run build && npm run build:networks && npm run size && npm run e2e",
+    "build:networks": "tsc --noEmit && vite build --mode mraid --outDir dist/mraid && vite build --mode google --outDir dist/google && vite build --mode meta --outDir dist/meta && vite build --mode mintegral --outDir dist/mintegral"
   },
   "dependencies": {
     "pixi.js": "8.21.0"

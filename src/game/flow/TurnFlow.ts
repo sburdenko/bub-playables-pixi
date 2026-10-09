@@ -11,23 +11,34 @@ export interface IAttack {
   update(deltaSeconds: number): boolean;
 }
 
-export type TurnState = { readonly kind: 'awaitingShot' } | { readonly kind: 'projectileFlying' } | { readonly kind: 'resolvingAttack' };
+/** When the playable ends: after this many finished attacks, plus a pause to let the moment land. */
+export type EndRule = { readonly afterAttacks: number; readonly delaySeconds: number };
 
-/** Runs a turn: load the sling, wait for the shot, fly it, resolve a match, repeat. Systems never call each other. */
+export type TurnState =
+  | { readonly kind: 'awaitingShot' }
+  | { readonly kind: 'projectileFlying' }
+  | { readonly kind: 'resolvingAttack' }
+  | { readonly kind: 'ending'; readonly timer: number }
+  | { readonly kind: 'ended' };
+
+/** Runs a turn: load the sling, wait for the shot, fly it, resolve a match, repeat until the end rule. Systems never call each other. */
 export class TurnFlow {
   private readonly _board: BoardSystem;
   private readonly _launcher: LauncherSystem;
   private readonly _attack: IAttack;
   private readonly _pointer: IPointerSource;
   private readonly _random: IRandom;
+  private readonly _endRule: EndRule;
   private _state: TurnState = { kind: 'awaitingShot' };
+  private _finishedAttacks = 0;
 
-  constructor(board: BoardSystem, launcher: LauncherSystem, attack: IAttack, pointer: IPointerSource, random: IRandom) {
+  constructor(board: BoardSystem, launcher: LauncherSystem, attack: IAttack, pointer: IPointerSource, random: IRandom, endRule: EndRule) {
     this._board = board;
     this._launcher = launcher;
     this._attack = attack;
     this._pointer = pointer;
     this._random = random;
+    this._endRule = endRule;
   }
 
   get state(): TurnState {
@@ -70,7 +81,20 @@ export class TurnFlow {
         return { kind: 'resolvingAttack' };
       }
       case 'resolvingAttack':
-        return this._attack.update(deltaSeconds) ? { kind: 'awaitingShot' } : this._state;
+        return this._attack.update(deltaSeconds) ? this.afterAttack() : this._state;
+      case 'ending': {
+        const timer = this._state.timer - deltaSeconds;
+
+        return timer > 0 ? { kind: 'ending', timer } : { kind: 'ended' };
+      }
+      case 'ended':
+        return this._state;
     }
+  }
+
+  private afterAttack(): TurnState {
+    this._finishedAttacks++;
+
+    return this._finishedAttacks >= this._endRule.afterAttacks ? { kind: 'ending', timer: this._endRule.delaySeconds } : { kind: 'awaitingShot' };
   }
 }
