@@ -4,6 +4,7 @@ import { MathRandom } from '../core/random/MathRandom';
 import { SeededRandom } from '../core/random/SeededRandom';
 import { computeViewportLayout, screenToWorld } from '../domain/layout/ViewportLayout';
 import { ASSET_MANIFEST } from '../generated/assets';
+import { selectAdNetwork } from '../platform/ads/selectAdNetwork';
 import { loadAssets } from '../platform/assets/AssetLoader';
 import { PointerInput } from '../platform/input/PointerInput';
 import { Playable } from './Playable';
@@ -26,16 +27,18 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   host.appendChild(app.canvas);
   exposeToDevtools(app);
 
-  const textures = await loadAssets(ASSET_MANIFEST);
+  const ads = selectAdNetwork(import.meta.env.MODE);
+  const [textures] = await Promise.all([loadAssets(ASSET_MANIFEST), ads.start()]);
   let layout = computeViewportLayout(app.screen.width, app.screen.height);
   const pointer = new PointerInput(app.canvas, (x, y) => screenToWorld(layout, x, y));
-  const playable = new Playable(textures, randomFromUrl(), pointer, layout);
+  const playable = new Playable(textures, randomFromUrl(), pointer, layout, ads);
   app.stage.addChild(playable.scene);
   app.renderer.on('resize', () => {
     layout = computeViewportLayout(app.screen.width, app.screen.height);
     playable.applyLayout(layout);
   });
   app.ticker.add((ticker) => playable.update(Math.min(ticker.deltaMS / 1000, MAX_DELTA_SECONDS)));
+  ads.onPauseChange((isPaused) => (isPaused ? app.ticker.stop() : app.ticker.start()));
 
   return app;
 }

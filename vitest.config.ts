@@ -6,7 +6,7 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      include: ['src/core/**', 'src/domain/**', 'src/game/**', 'tools/**/*.ts'],
+      include: ['src/core/**', 'src/domain/**', 'src/game/**', 'src/platform/ads/**', 'tools/**/*.ts'],
       exclude: ['tools/assets/build.ts', 'tools/size/check.ts'],
       thresholds: { lines: 80, functions: 80, branches: 80, statements: 80 },
     },

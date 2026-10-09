@@ -25,7 +25,7 @@ class RecordingAttack implements IAttack {
   }
 }
 
-function setUp(level: string[], shotX: (board: BoardSystem) => number) {
+function setUp(level: string[], shotX: (board: BoardSystem) => number, endRule = { afterAttacks: 2, delaySeconds: 0.5 }) {
   const factory = new FakeFactory();
   const board = new BoardSystem(parseLevel(level), factory, DESIGN_RECT);
   const launcher = new LauncherSystem(new FakeSling());
@@ -34,7 +34,7 @@ function setUp(level: string[], shotX: (board: BoardSystem) => number) {
   const pullX = anchor.x - (shotX(board) - anchor.x) * 0.05;
   const pointer = new ScriptedPointer([null, press(anchor.x, anchor.y), hold(pullX, anchor.y - 0.8), release(pullX, anchor.y - 0.8)]);
   const attack = new RecordingAttack();
-  const turn = new TurnFlow(board, launcher, attack, pointer, { next: () => 0 });
+  const turn = new TurnFlow(board, launcher, attack, pointer, { next: () => 0 }, endRule);
 
   return { board, launcher, turn, attack, factory };
 }
@@ -69,5 +69,17 @@ describe('TurnFlow', () => {
 
     runUntil(turn, 'awaitingShot', 10);
     expect(turn.state.kind).toBe('awaitingShot');
+  });
+
+  it('endsAfterTheConfiguredAttacksAndADelay', () => {
+    const { turn } = setUp(['RRRR.RR'], (b) => b.geometry.cellPosition(cell(0, 4)).x, { afterAttacks: 1, delaySeconds: 0.5 });
+
+    runUntil(turn, 'ending');
+    expect(turn.state.kind).toBe('ending');
+
+    runUntil(turn, 'ended', 40);
+    expect(turn.state.kind).toBe('ended');
+    turn.update(1 / 60);
+    expect(turn.state.kind).toBe('ended');
   });
 });

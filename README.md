@@ -12,8 +12,8 @@ A bubble shooter playable ad built with **TypeScript + PixiJS 8**. The build out
 | P3 | Bubble board | ✅ |
 | P4 | Sling, shot, flight, landing | ✅ |
 | P5 | Attack: bubbles fly into the orb, the orb hits the enemy, effects | ✅ |
-| P6 | Ad networks, end card, builds | ⏳ |
-| P7 | Performance, QA | |
+| P6 | Ad networks, end card, builds | ✅ |
+| P7 | Performance, QA | ⏳ |
 
 ---
 
@@ -141,7 +141,7 @@ Every system is an explicit state machine. Data lives inside the state that need
 | `LauncherSystem` | `empty → ready → aiming` | grabs the bubble, limits the pull to a ±40° cone, shoots opposite to the pull |
 | `BoardSystem` | a shot in flight or not | accelerated flight, wall bounces, landing on the nearest free cell, impact ripple, matches |
 | `MatchAttackSequence` | per bubble `waiting → popping → flying → shrinking → done`; orb `gathering → orbFlying → orbHit` | pops matched bubbles in a stagger, arcs them into the orb, flies the charged orb into the enemy |
-| `TurnFlow` | `awaitingShot → projectileFlying → resolvingAttack` | loads the sling, starts the flight, hands matches to the attack |
+| `TurnFlow` | `awaitingShot → projectileFlying → resolvingAttack → ending → ended` | loads the sling, starts the flight, hands matches to the attack, ends after the configured attacks |
 
 ```mermaid
 stateDiagram-v2
@@ -221,11 +221,29 @@ flowchart LR
 
 ---
 
+## Ad networks
+
+Each network gets its own single-file build. The Vite mode names the network, and `platform/ads/selectAdNetwork` picks the matching `IAdNetwork` adapter; the other adapters are never called.
+
+| Build | Output | SDK calls | Extra head tags |
+|---|---|---|---|
+| `npm run build` | `dist/index.html` | none (dev and web) | — |
+| MRAID (AppLovin, ironSource, Unity Ads) | `dist/mraid/index.html` | waits for `ready` and visibility, `mraid.open(storeUrl)`, pauses on `viewableChange` | `mraid.js` |
+| Google Ads | `dist/google/index.html` | `ExitApi.exit()` | `ad.size` meta, `exitapi.js` |
+| Meta | `dist/meta/index.html` | `FbPlayableAd.onCTAClick()` | — |
+| Mintegral | `dist/mintegral/index.html` | `gameReady()`, `install()`, `gameEnd()` | — |
+
+`npm run build:networks` builds all of them. Store links for MRAID and web builds come from `VITE_STORE_URL_IOS` and `VITE_STORE_URL_ANDROID` (see `.env.example`).
+
+The playable ends after the first attack (`END_RULE` in `app/Playable.ts`): the end card dims the game and any tap calls `openStore()`. The store is only ever opened from a user gesture, as networks require.
+
+---
+
 ## Quality
 
 ```mermaid
 flowchart LR
-    a[assets:build] --> b[lint<br/>layer boundaries] --> c[typecheck<br/>strict] --> d[unit tests<br/>coverage ≥ 80%] --> e[build<br/>single HTML] --> f[size<br/>≤ 4.5 MB] --> g[e2e<br/>in Chrome]
+    a[assets:build] --> b[lint<br/>layer boundaries] --> c[typecheck<br/>strict] --> d[unit tests<br/>coverage ≥ 80%] --> e[builds<br/>web + 4 networks] --> f[size<br/>each ≤ 4.5 MB] --> g[e2e<br/>in Chrome]
 ```
 
 `npm run verify` runs the whole chain. Any failing step stops it.
@@ -233,9 +251,9 @@ flowchart LR
 | Level | Tool | What it checks |
 |---|---|---|
 | Unit | Vitest | game rules, math, build tools; no browser, runs in seconds |
-| E2E | Playwright | the built `index.html` starts without errors, draws the scene, makes no network requests, shoots, plays an attack; on a phone and in landscape |
+| E2E | Playwright | the built `index.html` starts without errors, draws the scene, makes no network requests, shoots, plays an attack, shows the end card and opens the store on tap; on a phone and in landscape |
 | Static | TypeScript strict, ESLint | types, layer boundaries, bans for the pure layers, function and file size |
-| Size | `npm run size` | a single file of at most 4.5 MB |
+| Size | `npm run size` | every build is a single file of at most 4.5 MB |
 
 ---
 
@@ -264,6 +282,7 @@ npm run dev
 | `npm run dev` | dev server with instant reload |
 | `npm run assets:build` | `assets-src/` → atlases and manifest |
 | `npm run build` | typecheck + build into a single `dist/index.html` |
+| `npm run build:networks` | one single-file build per ad network under `dist/<network>/` |
 | `npm run verify` | every check in order |
 | `npm run test` / `test:watch` | unit tests |
 | `npm run coverage` | unit tests with the coverage threshold |

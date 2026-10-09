@@ -83,6 +83,11 @@ export default tseslint.config(
     },
   },
   {
+    // Declaration files merge into library types and must use the library's names.
+    files: ['src/**/*.d.ts'],
+    rules: { '@typescript-eslint/naming-convention': 'off' },
+  },
+  {
     files: ['src/core/**/*.ts', 'src/domain/**/*.ts', 'src/game/**/*.ts'],
     rules: {
       'no-restricted-globals': ['error', ...BROWSER_GLOBALS_FORBIDDEN_IN_PURE_LAYERS],
