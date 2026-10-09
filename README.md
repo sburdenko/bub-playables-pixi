@@ -1,59 +1,59 @@
 # Bubble Playable
 
-Рекламный playable в жанре bubble shooter на **TypeScript + PixiJS 8**. Результат сборки — **один файл `index.html`** до 4.5 МБ, который загружается в рекламные сети.
+A bubble shooter playable ad built with **TypeScript + PixiJS 8**. The build output is **a single `index.html`** of at most 4.5 MB that is uploaded to ad networks.
 
-> Арт и шрифт (`assets-src/`) принадлежат третьим лицам и в репозиторий не входят. Без этой папки код можно читать, но собрать игру нельзя.
+> The art and font (`assets-src/`) belong to third parties and are not part of this repository. Without that folder the code can be read but the game cannot be built.
 
-| Этап | Что делается | Статус |
+| Stage | Scope | Status |
 |---|---|---|
-| P0 | Каркас, пайплайн ассетов, проверки | ✅ |
-| P1 | Правила игры без графики: сетка, совпадения, физика снаряда | ✅ |
-| P2 | Сцена и вёрстка под любой экран | ✅ |
-| P3 | Поле с шарами | ✅ |
-| P4 | Рогатка, выстрел, полёт, прилипание | ✅ |
-| P5 | Атака: шары летят в орб, орб во врага, эффекты | ⏳ |
-| P6 | Рекламные сети, финальный экран, сборки | |
-| P7 | Производительность, QA | |
+| P0 | Scaffold, asset pipeline, quality gates | ✅ |
+| P1 | Game rules without graphics: grid, matches, projectile physics | ✅ |
+| P2 | Scene and layout for any screen | ✅ |
+| P3 | Bubble board | ✅ |
+| P4 | Sling, shot, flight, landing | ✅ |
+| P5 | Attack: bubbles fly into the orb, the orb hits the enemy, effects | ⏳ |
+| P6 | Ad networks, end card, builds | |
+| P7 | Performance, QA | |
 
 ---
 
-## Архитектура
+## Architecture
 
-### Слои
+### Layers
 
-Код разделён на слои. **Слой может зависеть только от слоёв ниже себя.** Правила игры ничего не знают о PixiJS, а графика ничего не решает.
+The code is split into layers. **A layer may only depend on the layers below it.** Game rules know nothing about PixiJS, and graphics make no decisions.
 
 ```mermaid
 flowchart TB
-    app["<b>app</b><br/>собирает и связывает всё"]
-    view["<b>view</b><br/>рисует · PixiJS"]
-    platform["<b>platform</b><br/>экран, касания, загрузка, реклама"]
-    game["<b>game</b><br/>сценарий хода, машины состояний<br/><i>game/ports — интерфейсы</i>"]
-    domain["<b>domain</b><br/>правила игры, чистые функции"]
-    core["<b>core</b><br/>математика, утилиты"]
+    app["<b>app</b><br/>creates and wires everything"]
+    view["<b>view</b><br/>draws · PixiJS"]
+    platform["<b>platform</b><br/>screen, touch, loading, ads"]
+    game["<b>game</b><br/>turn flow, state machines<br/><i>game/ports: interfaces</i>"]
+    domain["<b>domain</b><br/>game rules, pure functions"]
+    core["<b>core</b><br/>math, utilities"]
 
     app --> view & platform
-    view -. реализует порты .-> game
-    platform -. реализует порты .-> game
+    view -. implements ports .-> game
+    platform -. implements ports .-> game
     game --> domain --> core
 ```
 
-Стрелки показывают ближайшего соседа. Каждый слой может использовать и всё, что лежит ниже по схеме, но никогда то, что выше:
+Arrows show the nearest neighbour. Each layer may also use everything further down the diagram, never anything above:
 
-| Слой | Знает о | Не знает о |
+| Layer | Knows about | Does not know about |
 |---|---|---|
-| `core` | — | всём остальном, PixiJS, браузере |
-| `domain` | `core` | `game`, `view`, `platform`, PixiJS, браузере |
-| `game` | `domain`, `core` | `view`, `platform`, PixiJS, браузере |
+| `core` | — | everything else, PixiJS, the browser |
+| `domain` | `core` | `game`, `view`, `platform`, PixiJS, the browser |
+| `game` | `domain`, `core` | `view`, `platform`, PixiJS, the browser |
 | `view` | `game/ports`, `domain`, `core`, PixiJS | `platform`, `app` |
-| `platform` | `game/ports`, `core`, браузер | `view`, `app`, PixiJS (кроме загрузки ассетов) |
-| `app` | всё | — |
+| `platform` | `game/ports`, `core`, the browser | `view`, `app`, PixiJS (except asset loading) |
+| `app` | everything | — |
 
-**Как это удерживается в чистоте.** Таблица выше — не договорённость, а проверка. Собственное ESLint-правило `layers/dependency-direction` ([tools/eslint/layer-rule.js](tools/eslint/layer-rule.js)) роняет `npm run verify` при любом импорте не в ту сторону. В `core`, `domain` и `game` дополнительно запрещены глобальные объекты браузера (`window`, `document`, `fetch`, `setTimeout`…) и `async`/`await`: логика игры — это явные машины состояний, которые обновляются каждый кадр.
+**How it stays clean.** The table above is enforced, not agreed on. A custom ESLint rule, `layers/dependency-direction` ([tools/eslint/layer-rule.js](tools/eslint/layer-rule.js)), fails `npm run verify` on any import in the wrong direction. `core`, `domain` and `game` are also barred from browser globals (`window`, `document`, `fetch`, `setTimeout`…) and from `async`/`await`: game logic is explicit state machines updated every frame.
 
-### Порты и адаптеры
+### Ports and adapters
 
-Если слою нужно что-то от соседа, он не импортирует его, а **объявляет интерфейс** (порт). Сосед реализует интерфейс, а `app` их связывает. Так зависимости всегда идут в одну сторону, а любую часть можно подменить в тестах.
+When a layer needs something from a neighbour, it does not import it; it **declares an interface** (a port). The neighbour implements it and `app` wires them together. Dependencies always point one way, and any part can be replaced with a fake in tests.
 
 ```mermaid
 classDiagram
@@ -85,15 +85,15 @@ classDiagram
     class Bootstrap {
         <<app>>
     }
-    ITextureSource <|.. TextureLibrary : реализует
-    Scene --> ITextureSource : использует
-    Bootstrap ..> TextureLibrary : создаёт
-    Bootstrap ..> Scene : передаёт текстуры
-    IBubbleViewFactory <|.. BubbleLayer : реализует
-    BoardSystem --> IBubbleViewFactory : создаёт шары через
+    ITextureSource <|.. TextureLibrary : implements
+    Scene --> ITextureSource : uses
+    Bootstrap ..> TextureLibrary : creates
+    Bootstrap ..> Scene : passes textures
+    IBubbleViewFactory <|.. BubbleLayer : implements
+    BoardSystem --> IBubbleViewFactory : creates bubbles through
 ```
 
-### Запуск
+### Startup
 
 ```mermaid
 sequenceDiagram
@@ -101,77 +101,77 @@ sequenceDiagram
     participant Boot as app/Bootstrap
     participant Pixi as PixiJS Application
     participant Loader as platform/AssetLoader
-    participant Scene as Сцена
+    participant Game as app/Playable
 
     Main->>Boot: startPlayable(host)
     Boot->>Pixi: init(resizeTo host, resolution ≤ 2)
     Boot->>Loader: loadAssets(ASSET_MANIFEST)
     Loader-->>Boot: TextureLibrary
-    Boot->>Scene: new SceneView(textures, random)
+    Boot->>Game: new Playable(textures, random, pointer, layout)
     Boot->>Pixi: stage.addChild(scene)
-    loop каждый resize
-        Pixi->>Boot: размер экрана
-        Boot->>Scene: applyLayout(computeViewportLayout(w, h))
+    loop every resize
+        Pixi->>Boot: screen size
+        Boot->>Game: applyLayout(computeViewportLayout(w, h))
     end
-    loop каждый кадр
-        Pixi->>Scene: update(dt ≤ 0.1 с)
+    loop every frame
+        Pixi->>Game: update(dt ≤ 0.1 s)
     end
-    Boot-->>Main: готово → data-state="ready"
+    Boot-->>Main: ready → data-state="ready"
 ```
 
-### Камера и вёрстка
+### Camera and layout
 
-Весь мир рисуется в одном контейнере `WorldStage`, трансформация которого и есть камера: дочерние объекты живут в **мировых единицах с осью Y вверх**, а контейнер переводит их в пиксели экрана. Поэтому позиции и размеры переносятся из исходного дизайна без пересчёта.
+The whole world is drawn inside one container, `WorldStage`, whose transform is the camera: children live in **world units with Y up**, and the container maps them to screen pixels. Positions and sizes carry over from the original design without conversion.
 
-`computeViewportLayout` (чистая функция в `domain/layout`) по размеру экрана считает, что видно:
+`computeViewportLayout` (a pure function in `domain/layout`) works out what is visible for a screen size:
 
-| Экран | Что происходит |
+| Screen | What happens |
 |---|---|
-| эталон 1125×2436 | видна ровно область дизайна |
-| телефон выше эталона | видно больше по высоте, ширина поля та же |
-| планшет в портрете | видно больше по бокам, поле остаётся эталонной ширины |
-| ландшафт | полоса эталонных пропорций по центру, по бокам чёрные поля |
+| reference 1125×2436 | exactly the design area is visible |
+| phone taller than the reference | more height is visible, the board keeps its width |
+| tablet in portrait | more is visible at the sides, the board keeps the reference width |
+| landscape | a reference-aspect strip in the centre, black bars at the sides |
 
-### Ход игры
+### Turn flow
 
-Каждая система — явная машина состояний. Данные живут внутри состояния, которому они нужны, поэтому невозможные сочетания нельзя даже записать в коде. Системы не знают друг о друге: ход ведёт посредник `TurnFlow`, который каждый кадр опрашивает ввод и двигает ход дальше.
+Every system is an explicit state machine. Data lives inside the state that needs it, so impossible combinations cannot even be written. Systems do not know each other: the `TurnFlow` mediator polls input every frame and moves the turn forward.
 
-| Система | Состояния | Что делает |
+| System | States | What it does |
 |---|---|---|
-| `LauncherSystem` | `empty → ready → aiming` | хватает шар, ограничивает оттяжку конусом ±40°, стреляет против оттяжки |
-| `BoardSystem` | шар в полёте или нет | полёт с ускорением, отскоки, прилипание к ближайшей свободной клетке, волна, совпадения |
-| `TurnFlow` | `awaitingShot → projectileFlying → resolvingAttack` | заряжает рогатку, запускает полёт, отдаёт совпадения атаке |
+| `LauncherSystem` | `empty → ready → aiming` | grabs the bubble, limits the pull to a ±40° cone, shoots opposite to the pull |
+| `BoardSystem` | a shot in flight or not | accelerated flight, wall bounces, landing on the nearest free cell, impact ripple, matches |
+| `TurnFlow` | `awaitingShot → projectileFlying → resolvingAttack` | loads the sling, starts the flight, hands matches to the attack |
 
 ```mermaid
 stateDiagram-v2
     direction LR
-    [*] --> awaitingShot: снаряд заряжен
-    awaitingShot --> projectileFlying: выстрел
-    projectileFlying --> awaitingShot: прилип, совпадения нет
-    projectileFlying --> resolvingAttack: совпало 5+ шаров
-    resolvingAttack --> awaitingShot: атака закончилась
-    awaitingShot --> ended: условие конца
-    resolvingAttack --> ended: условие конца
-    ended --> [*]: финальный экран и кнопка стора
+    [*] --> awaitingShot: sling loaded
+    awaitingShot --> projectileFlying: shot
+    projectileFlying --> awaitingShot: landed, no match
+    projectileFlying --> resolvingAttack: 5+ bubbles matched
+    resolvingAttack --> awaitingShot: attack finished
+    awaitingShot --> ended: end condition
+    resolvingAttack --> ended: end condition
+    ended --> [*]: end card and store button
 ```
 
-### Структура
+### Structure
 
 ```
 src/
-├─ main.ts            точка входа
-├─ app/               composition root: создаёт объекты и связывает слои
-├─ core/              векторы, прямоугольники, кривые, случайные числа
-├─ domain/            правила игры: сетка, совпадения, физика, анимация, вьюпорт
-├─ game/              системы (поле, рогатка, атака) и порты к view
-├─ view/              всё, что рисует: камера, вёрстка, персонажи
-├─ platform/          экран, касания, загрузка ассетов, реклама
-├─ dev/               dev-страницы, в сборку не попадают
-└─ generated/         создаётся сборкой ассетов, не редактировать
+├─ main.ts            entry point
+├─ app/               composition root: creates objects and wires layers
+├─ core/              vectors, rectangles, curves, random numbers
+├─ domain/            game rules: grid, matches, physics, animation, viewport
+├─ game/              systems (board, sling, attack) and ports to the view
+├─ view/              everything that draws: camera, layout, characters
+├─ platform/          screen, touch, asset loading, ads
+├─ dev/               dev pages, not part of the build
+└─ generated/         produced by the asset build, do not edit
 tools/
-├─ assets/            сборка атласов и манифеста
-├─ size/              бюджет размера
-└─ eslint/            правило направлений зависимостей
+├─ assets/            atlas and manifest build
+├─ size/              size budget
+└─ eslint/            dependency direction rule
 tests/
 ├─ unit/              Vitest
 └─ e2e/               Playwright
@@ -179,14 +179,14 @@ tests/
 
 ---
 
-## Ассеты
+## Assets
 
 ```mermaid
 flowchart LR
-    src["assets-src/<br/>PNG по папкам-группам<br/>+ catalog.json"]
+    src["assets-src/<br/>PNG in group folders<br/>+ catalog.json"]
     build["npm run assets:build"]
-    atlases["атласы<br/>WebP · PNG · JPEG"]
-    manifest["src/generated/assets.ts<br/>типизированный манифест"]
+    atlases["atlases<br/>WebP · PNG · JPEG"]
+    manifest["src/generated/assets.ts<br/>typed manifest"]
     loader["AssetLoader"]
     views["view"]
 
@@ -195,46 +195,46 @@ flowchart LR
     build --> manifest
     atlases --> manifest
     manifest -->|import| loader
-    loader -->|текстура по id| views
+    loader -->|texture by id| views
 ```
 
-**Папка картинки — это её группа**, а группа решает, как картинка попадёт в игру. Правила лежат в [tools/assets/rules.ts](tools/assets/rules.ts):
+**The folder an image lives in is its group**, and the group decides how it ships. The rules are in [tools/assets/rules.ts](tools/assets/rules.ts):
 
-| Папка | Куда идёт | Масштаб | Формат |
+| Folder | Ships as | Scale | Format |
 |---|---|---|---|
-| `hero/`, `enemy/` | свой атлас, обрезка прозрачных полей | 0.4 | WebP |
-| `bubbles/` | атлас, обрезка прозрачных полей | 0.5 (тела, тень, обводка — 0.4) | WebP |
-| `ui/` | атлас | 1 (нижняя панель — 0.5) | WebP |
-| `frame/`, `vfx/` | свои атласы | 0.45 / 1 | PNG с палитрой |
-| `single/` | отдельный файл | 1 | JPEG |
+| `hero/`, `enemy/` | own atlas, transparent margins trimmed | 0.4 | WebP |
+| `bubbles/` | atlas, transparent margins trimmed | 0.5 (bodies, shadow, outline: 0.4) | WebP |
+| `ui/` | atlas | 1 (bottom panel: 0.5) | WebP |
+| `frame/`, `vfx/` | own atlases | 0.45 / 1 | palette PNG |
+| `single/` | standalone file | 1 | JPEG |
 
-- `pixelsPerUnit` пересчитывается при уменьшении, поэтому размер картинки в игровом мире не меняется.
-- Ассеты импортируются как модули: в dev их отдаёт Vite, в сборке они встраиваются в `index.html`. Внешних запросов у playable нет.
-- Папка без правила ломает сборку: решение «что и как везём» всегда явное.
+- `pixelsPerUnit` is rescaled with the image, so an image keeps its size in the game world.
+- Assets are imported as modules: Vite serves them in dev and the build inlines them into `index.html`. The playable makes no external requests.
+- A folder without a rule fails the build: what ships, and how, is always an explicit decision.
 
-**Добавить картинку:** положить PNG в `assets-src/<группа>/`, добавить запись в `assets-src/catalog.json` (`id`, `file`, `width`, `height`, `pixelsPerUnit`, `anchor`, `borders`) и запустить `npm run assets:build`. Картинка доступна в коде по `id`.
+**Adding an image:** put the PNG in `assets-src/<group>/`, add an entry to `assets-src/catalog.json` (`id`, `file`, `width`, `height`, `pixelsPerUnit`, `anchor`, `borders`) and run `npm run assets:build`. The image is then available in code by `id`.
 
 ---
 
-## Качество
+## Quality
 
 ```mermaid
 flowchart LR
-    a[assets:build] --> b[lint<br/>границы слоёв] --> c[typecheck<br/>strict] --> d[unit-тесты<br/>покрытие ≥ 80%] --> e[сборка<br/>один HTML] --> f[размер<br/>≤ 4.5 МБ] --> g[e2e<br/>в Chrome]
+    a[assets:build] --> b[lint<br/>layer boundaries] --> c[typecheck<br/>strict] --> d[unit tests<br/>coverage ≥ 80%] --> e[build<br/>single HTML] --> f[size<br/>≤ 4.5 MB] --> g[e2e<br/>in Chrome]
 ```
 
-`npm run verify` запускает всю цепочку. Любой красный шаг останавливает её.
+`npm run verify` runs the whole chain. Any failing step stops it.
 
-| Уровень | Чем | Что проверяет |
+| Level | Tool | What it checks |
 |---|---|---|
-| Unit | Vitest | правила игры, математика, инструменты сборки; без браузера, за секунды |
-| E2E | Playwright | собранный `index.html` стартует без ошибок, рисует сцену, не ходит в сеть; на телефоне и в ландшафте |
-| Статика | TypeScript strict, ESLint | типы, границы слоёв, запреты для чистых слоёв, размер функций и файлов |
-| Размер | `npm run size` | один файл и не больше 4.5 МБ |
+| Unit | Vitest | game rules, math, build tools; no browser, runs in seconds |
+| E2E | Playwright | the built `index.html` starts without errors, draws the scene, makes no network requests, shoots; on a phone and in landscape |
+| Static | TypeScript strict, ESLint | types, layer boundaries, bans for the pure layers, function and file size |
+| Size | `npm run size` | a single file of at most 4.5 MB |
 
 ---
 
-## Быстрый старт
+## Getting started
 
 ```bash
 npm install
@@ -248,36 +248,36 @@ npm run assets:build
 npm run dev
 ```
 
-- Игра: <http://localhost:5173>
-- Галерея всех спрайтов: <http://localhost:5173/dev/assets.html>
-- С телефона в той же Wi-Fi сети: адрес `Network:` из вывода `npm run dev`
-- В dev-режиме сцену можно смотреть расширением **PixiJS DevTools** для Chrome
+- Game: <http://localhost:5173>
+- Sprite gallery: <http://localhost:5173/dev/assets.html>
+- From a phone on the same Wi-Fi: the `Network:` address printed by `npm run dev`
+- In dev mode the scene can be inspected with the **PixiJS DevTools** Chrome extension
 
-| Команда | Что делает |
+| Command | What it does |
 |---|---|
-| `npm run dev` | dev-сервер с мгновенной перезагрузкой |
-| `npm run assets:build` | `assets-src/` → атласы и манифест |
-| `npm run build` | typecheck + сборка в один `dist/index.html` |
-| `npm run verify` | все проверки по порядку |
-| `npm run test` / `test:watch` | unit-тесты |
-| `npm run coverage` | unit-тесты с порогом покрытия |
-| `npm run e2e` | e2e-тесты собранного билда |
-| `npm run size` | проверка бюджета размера |
+| `npm run dev` | dev server with instant reload |
+| `npm run assets:build` | `assets-src/` → atlases and manifest |
+| `npm run build` | typecheck + build into a single `dist/index.html` |
+| `npm run verify` | every check in order |
+| `npm run test` / `test:watch` | unit tests |
+| `npm run coverage` | unit tests with the coverage threshold |
+| `npm run e2e` | e2e tests of the built playable |
+| `npm run size` | size budget check |
 
 ---
 
-## Конвенции
+## Conventions
 
-- `interface` с префиксом `I` описывает поведение (контракт), `type` описывает данные.
-- Состояния — размеченные объединения (`{ kind: 'aiming', pull }`), а не наборы флагов.
-- Данные неизменяемые: операции возвращают новые объекты. Объекты PixiJS меняются только внутри `view`.
-- Никакого глобального состояния и синглтонов: всё передаётся через конструктор.
-- Приватные поля `_camelCase`, константы `UPPER_SNAKE_CASE`, булевы значения с `is` / `has` / `can`.
-- Комментарии только к публичным контрактам и для неочевидного «почему».
-- Функция до 50 строк, файл до 400.
+- An `I`-prefixed `interface` describes behaviour (a contract); a `type` describes data.
+- States are discriminated unions (`{ kind: 'aiming', pull }`), not sets of flags.
+- Data is immutable: operations return new objects. PixiJS objects are mutated only inside `view`.
+- No global state and no singletons: everything is passed through constructors.
+- Private fields `_camelCase`, constants `UPPER_SNAKE_CASE`, booleans start with `is` / `has` / `can`.
+- Comments only on public contracts and for a non-obvious "why".
+- Functions up to 50 lines, files up to 400.
 
 ---
 
-## Лицензия
+## License
 
-Все права защищены. Репозиторий открыт только для просмотра: использовать, копировать, изменять и распространять код нельзя. Подробности — в [LICENSE](LICENSE).
+All rights reserved. The repository is public for viewing only: the code may not be used, copied, modified or distributed. See [LICENSE](LICENSE).
