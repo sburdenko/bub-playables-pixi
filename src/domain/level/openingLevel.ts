@@ -1,0 +1,15 @@
+export const OPENING_LEVEL_ROWS: readonly string[] = [
+  'YYRG..YYGG',
+  'YYRRG.YBBGG',
+  'YRRGGYYBBG',
+  'BBBYY.GGRRR',
+  'BBYYYGGGRR',
+  '.RRYY.GGBB.',
+  'RRR....BBB',
+  '.RRGG.YYBB.',
+  'BBGGGYYYRR',
+  'BBBGG.YYRRR',
+  'BB......RR',
+  'BBB.....RRR',
+  '..........',
+];
