@@ -14,6 +14,9 @@ export class FakeBubbleView implements IBubbleView {
   isLaunched = false;
   impacts: { direction: Vec2; strength: number }[] = [];
   isDestroyed = false;
+  events: string[] = [];
+  rotation = 0;
+  shrink = 1;
 
   constructor(color: BubbleColor) {
     this.color = color;
@@ -49,6 +52,26 @@ export class FakeBubbleView implements IBubbleView {
 
   applyImpact(direction: Vec2, strength: number): void {
     this.impacts.push({ direction, strength });
+  }
+
+  playMatch(): void {
+    this.events.push('match');
+  }
+
+  beginCollect(): void {
+    this.events.push('collect');
+  }
+
+  stopAnimation(): void {
+    this.events.push('stop');
+  }
+
+  rotateBy(radians: number): void {
+    this.rotation += radians;
+  }
+
+  setShrink(factor: number): void {
+    this.shrink = factor;
   }
 
   destroy(): void {
@@ -109,13 +132,13 @@ export class ScriptedPointer implements IPointerSource {
 }
 
 export function press(x: number, y: number): PointerSample {
-  return { world: vec2(x, y), isPressedThisFrame: true, isHeld: true, isReleasedThisFrame: false };
+  return { world: vec2(x, y), pressWorld: vec2(x, y), isPressedThisFrame: true, isHeld: true, isReleasedThisFrame: false };
 }
 
 export function hold(x: number, y: number): PointerSample {
-  return { world: vec2(x, y), isPressedThisFrame: false, isHeld: true, isReleasedThisFrame: false };
+  return { world: vec2(x, y), pressWorld: null, isPressedThisFrame: false, isHeld: true, isReleasedThisFrame: false };
 }
 
 export function release(x: number, y: number): PointerSample {
-  return { world: vec2(x, y), isPressedThisFrame: false, isHeld: false, isReleasedThisFrame: true };
+  return { world: vec2(x, y), pressWorld: null, isPressedThisFrame: false, isHeld: false, isReleasedThisFrame: true };
 }

@@ -12,6 +12,7 @@ export class PointerInput implements IPointerSource {
   private readonly _toWorld: ToWorld;
   private _activeId: number | null = null;
   private _screen = { x: 0, y: 0 };
+  private _pressScreen: { x: number; y: number } | null = null;
   private _isPressed = false;
   private _isReleased = false;
 
@@ -30,8 +31,16 @@ export class PointerInput implements IPointerSource {
       return null;
     }
 
-    const sample = { world: this._toWorld(this._screen.x, this._screen.y), isPressedThisFrame: this._isPressed, isHeld, isReleasedThisFrame: this._isReleased };
+    const press = this._pressScreen;
+    const sample = {
+      world: this._toWorld(this._screen.x, this._screen.y),
+      pressWorld: press === null ? null : this._toWorld(press.x, press.y),
+      isPressedThisFrame: this._isPressed,
+      isHeld,
+      isReleasedThisFrame: this._isReleased,
+    };
     this._isPressed = false;
+    this._pressScreen = null;
     this._isReleased = false;
 
     return sample;
@@ -52,6 +61,7 @@ export class PointerInput implements IPointerSource {
     this._activeId = event.pointerId;
     this._isPressed = true;
     this.track(event);
+    this._pressScreen = this._screen;
     this._element.setPointerCapture(event.pointerId);
   };
 
