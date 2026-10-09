@@ -59,7 +59,7 @@ export class LauncherSystem {
       return null;
     }
 
-    const state: LauncherState = this._state.kind === 'ready' && pointer.isPressedThisFrame && this.isGrabbing(pointer.world, this._state.bubble)
+    const state: LauncherState = this._state.kind === 'ready' && pointer.isPressedThisFrame && this.isGrabbing(pointer.pressWorld ?? pointer.world, this._state.bubble)
       ? { kind: 'aiming', bubble: this._state.bubble, pull: ZERO }
       : this._state;
     if (state.kind !== 'aiming') {

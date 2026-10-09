@@ -1,5 +1,7 @@
 import { Application } from 'pixi.js';
+import type { IRandom } from '../core/random/IRandom';
 import { MathRandom } from '../core/random/MathRandom';
+import { SeededRandom } from '../core/random/SeededRandom';
 import { computeViewportLayout, screenToWorld } from '../domain/layout/ViewportLayout';
 import { ASSET_MANIFEST } from '../generated/assets';
 import { loadAssets } from '../platform/assets/AssetLoader';
@@ -27,7 +29,7 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   const textures = await loadAssets(ASSET_MANIFEST);
   let layout = computeViewportLayout(app.screen.width, app.screen.height);
   const pointer = new PointerInput(app.canvas, (x, y) => screenToWorld(layout, x, y));
-  const playable = new Playable(textures, new MathRandom(), pointer, layout);
+  const playable = new Playable(textures, randomFromUrl(), pointer, layout);
   app.stage.addChild(playable.scene);
   app.renderer.on('resize', () => {
     layout = computeViewportLayout(app.screen.width, app.screen.height);
@@ -36,6 +38,13 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   app.ticker.add((ticker) => playable.update(Math.min(ticker.deltaMS / 1000, MAX_DELTA_SECONDS)));
 
   return app;
+}
+
+/** `?seed=N` makes every random choice repeatable (tests, bug reports); otherwise play is random. */
+function randomFromUrl(): IRandom {
+  const seed = Number.parseInt(new URLSearchParams(window.location.search).get('seed') ?? '', 10);
+
+  return Number.isFinite(seed) ? new SeededRandom(seed) : new MathRandom();
 }
 
 /** Lets the PixiJS DevTools browser extension inspect the scene; dev builds only. */

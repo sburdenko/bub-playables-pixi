@@ -49,6 +49,14 @@ describe('LauncherSystem', () => {
     expect(sling.lastAim?.aim.y).toBeGreaterThan(0);
   });
 
+  it('grabsByWhereThePressStartedEvenIfTheFingerMovedInTheSameFrame', () => {
+    const { launcher, bubble } = loadedLauncher();
+
+    launcher.update({ world: { x: 0, y: ANCHOR_Y - 0.6 }, pressWorld: launcher.anchor, isPressedThisFrame: true, isHeld: true, isReleasedThisFrame: false });
+
+    expect(bubble.position.y).toBeCloseTo(ANCHOR_Y - 0.6, 10);
+  });
+
   it('shortPullReleasesBackToReady', () => {
     const { sling, launcher, bubble } = loadedLauncher();
 

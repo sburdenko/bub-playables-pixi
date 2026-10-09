@@ -93,3 +93,26 @@ test('pulling and releasing the sling shoots without errors', async ({ page }) =
   expect(Buffer.compare(before, await page.screenshot())).not.toBe(0);
   expect(errors).toEqual([]);
 });
+
+test('a matching shot plays the attack without errors', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await page.goto('/?seed=1');
+  await expect(page.locator('#app')).toHaveAttribute('data-state', 'ready');
+  const viewport = page.viewportSize();
+  if (viewport === null) {
+    throw new Error('Viewport size is unknown.');
+  }
+
+  const anchor = slingAnchorOnScreen(viewport.width, viewport.height);
+  const board = { x: 0, y: 0, width: viewport.width, height: anchor.y * 0.7 };
+  const before = await page.screenshot({ clip: board });
+  await page.mouse.move(anchor.x, anchor.y);
+  await page.mouse.down();
+  await page.mouse.move(anchor.x, anchor.y + 40, { steps: 5 });
+  await page.mouse.up();
+  await page.waitForTimeout(3500);
+
+  expect(Buffer.compare(before, await page.screenshot({ clip: board }))).not.toBe(0);
+  expect(errors).toEqual([]);
+});

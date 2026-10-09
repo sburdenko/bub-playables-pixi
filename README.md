@@ -11,8 +11,8 @@ A bubble shooter playable ad built with **TypeScript + PixiJS 8**. The build out
 | P2 | Scene and layout for any screen | ✅ |
 | P3 | Bubble board | ✅ |
 | P4 | Sling, shot, flight, landing | ✅ |
-| P5 | Attack: bubbles fly into the orb, the orb hits the enemy, effects | ⏳ |
-| P6 | Ad networks, end card, builds | |
+| P5 | Attack: bubbles fly into the orb, the orb hits the enemy, effects | ✅ |
+| P6 | Ad networks, end card, builds | ⏳ |
 | P7 | Performance, QA | |
 
 ---
@@ -140,6 +140,7 @@ Every system is an explicit state machine. Data lives inside the state that need
 |---|---|---|
 | `LauncherSystem` | `empty → ready → aiming` | grabs the bubble, limits the pull to a ±40° cone, shoots opposite to the pull |
 | `BoardSystem` | a shot in flight or not | accelerated flight, wall bounces, landing on the nearest free cell, impact ripple, matches |
+| `MatchAttackSequence` | per bubble `waiting → popping → flying → shrinking → done`; orb `gathering → orbFlying → orbHit` | pops matched bubbles in a stagger, arcs them into the orb, flies the charged orb into the enemy |
 | `TurnFlow` | `awaitingShot → projectileFlying → resolvingAttack` | loads the sling, starts the flight, hands matches to the attack |
 
 ```mermaid
@@ -154,6 +155,10 @@ stateDiagram-v2
     resolvingAttack --> ended: end condition
     ended --> [*]: end card and store button
 ```
+
+### Effects
+
+Particle effects are data, not code. Each one is an `EmitterConfig` ported from the original particle systems (burst count, lifetime, speed with a dampened speed limit, size and alpha over lifetime, additive or normal blending). `domain/vfx/Particles` simulates them as pure functions; `view/vfx` only draws them.
 
 ### Structure
 
@@ -228,7 +233,7 @@ flowchart LR
 | Level | Tool | What it checks |
 |---|---|---|
 | Unit | Vitest | game rules, math, build tools; no browser, runs in seconds |
-| E2E | Playwright | the built `index.html` starts without errors, draws the scene, makes no network requests, shoots; on a phone and in landscape |
+| E2E | Playwright | the built `index.html` starts without errors, draws the scene, makes no network requests, shoots, plays an attack; on a phone and in landscape |
 | Static | TypeScript strict, ESLint | types, layer boundaries, bans for the pure layers, function and file size |
 | Size | `npm run size` | a single file of at most 4.5 MB |
 
@@ -252,6 +257,7 @@ npm run dev
 - Sprite gallery: <http://localhost:5173/dev/assets.html>
 - From a phone on the same Wi-Fi: the `Network:` address printed by `npm run dev`
 - In dev mode the scene can be inspected with the **PixiJS DevTools** Chrome extension
+- `?seed=N` makes every random choice repeatable (projectile colours, idle pauses, particles)
 
 | Command | What it does |
 |---|---|

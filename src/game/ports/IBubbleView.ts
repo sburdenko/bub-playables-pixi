@@ -19,6 +19,15 @@ export interface IBubbleView {
   setRestPosition(rest: Vec2): void;
   /** Wobbles the bubble around its rest position. */
   applyImpact(direction: Vec2, strength: number): void;
+  /** Pop: squash, glow and fade the shadow. */
+  playMatch(): void;
+  /** Leaves the board to fly into the orb: drawn above everything, trailing sparkles. */
+  beginCollect(): void;
+  /** Returns to the plain look (end of the pop, before shrinking into the orb). */
+  stopAnimation(): void;
+  rotateBy(radians: number): void;
+  /** Size relative to normal: 1 is full size, 0 is gone. */
+  setShrink(factor: number): void;
   destroy(): void;
 }
 
