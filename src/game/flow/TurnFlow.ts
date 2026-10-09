@@ -2,7 +2,7 @@ import type { IRandom } from '../../core/random/IRandom';
 import type { BoardSystem } from '../board/BoardSystem';
 import type { LauncherSystem } from '../launcher/LauncherSystem';
 import type { IBubbleView } from '../ports/IBubbleView';
-import type { IPointerSource } from '../ports/IPointerSource';
+import type { IPointerSource, PointerSample } from '../ports/IPointerSource';
 
 /** What happens to matched bubbles. The attack sequence takes ownership and reports when it is over. */
 export interface IAttack {
@@ -50,7 +50,7 @@ export class TurnFlow {
     this._state = this.next(deltaSeconds, pointer);
   }
 
-  private next(deltaSeconds: number, pointer: ReturnType<IPointerSource['poll']>): TurnState {
+  private next(deltaSeconds: number, pointer: PointerSample | null): TurnState {
     switch (this._state.kind) {
       case 'awaitingShot': {
         if (this._launcher.isEmpty) {

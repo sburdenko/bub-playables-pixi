@@ -44,6 +44,14 @@ describe('computeViewportLayout', () => {
     expect(layout.visibleRect.width).toBeCloseTo(REFERENCE_WIDTH, 10);
   });
 
+  it('zeroSizeScreen_keepsTheMappingInvertible', () => {
+    const layout = computeViewportLayout(0, 0);
+    const world = screenToWorld(layout, 0, 0);
+
+    expect(layout.pixelsPerUnit).toBeGreaterThan(0);
+    expect(Number.isFinite(world.x) && Number.isFinite(world.y)).toBe(true);
+  });
+
   it('zeroHeightScreen_fallsBackToTheReferenceAspect', () => {
     expect(computeViewportLayout(100, 0).visibleRect.width).toBeCloseTo(REFERENCE_WIDTH, 10);
   });

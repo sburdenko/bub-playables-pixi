@@ -13,7 +13,7 @@ A bubble shooter playable ad built with **TypeScript + PixiJS 8**. The build out
 | P4 | Sling, shot, flight, landing | ✅ |
 | P5 | Attack: bubbles fly into the orb, the orb hits the enemy, effects | ✅ |
 | P6 | Ad networks, end card, builds | ✅ |
-| P7 | Performance, QA | ⏳ |
+| P7 | Performance, QA | ✅ |
 
 ---
 
@@ -254,6 +254,13 @@ flowchart LR
 | E2E | Playwright | the built `index.html` starts without errors, draws the scene, makes no network requests, shoots, plays an attack, shows the end card and opens the store on tap; on a phone and in landscape |
 | Static | TypeScript strict, ESLint | types, layer boundaries, bans for the pure layers, function and file size |
 | Size | `npm run size` | every build is a single file of at most 4.5 MB |
+
+### Performance notes
+
+- **Size.** Each build is 1.54 MB, about a third of the 4.5 MB budget: roughly 0.95 MB of base64 assets and 0.6 MB of code, almost all of it PixiJS. Importing only selected PixiJS modules did not shrink the bundle, so the simpler full import stays.
+- **Draw calls.** Sprites come from six atlases, so the board, characters and effects batch into a handful of draw calls.
+- **No tunnelling.** The shot is sub-stepped so it never moves more than half its radius between contact checks, even at low frame rates.
+- **No leaks.** Particle batches, floating numbers, trails and popped bubbles all destroy themselves; after several turns the world holds only the static scene and three sprites per bubble.
 
 ---
 

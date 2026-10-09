@@ -51,6 +51,9 @@ export class SlingView implements ISlingView {
     this._rightPost.position.set(anchor.x + POST_OFFSET_X, anchor.y);
     this._leftPost.scale.set(POST_SCALE);
     this._rightPost.scale.set(POST_SCALE);
+    if (this._pocket.kind === 'held') {
+      this.holdPocket(anchor);
+    }
   }
 
   setAimColor(color: BubbleColor): void {

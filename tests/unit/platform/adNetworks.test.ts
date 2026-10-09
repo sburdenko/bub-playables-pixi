@@ -27,6 +27,7 @@ function stubBrowser(globals: Record<string, unknown>): void {
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -63,6 +64,7 @@ describe('MraidAdNetwork', () => {
   it('opensTheStoreThroughMraidAndReportsPauses', () => {
     const mraid = fakeMraid('default', true);
     stubBrowser({ mraid });
+    vi.stubEnv('VITE_STORE_URL_ANDROID', 'https://play.example/app');
     const network = new MraidAdNetwork();
     const pauses: boolean[] = [];
 
@@ -72,7 +74,17 @@ describe('MraidAdNetwork', () => {
     network.openStore();
 
     expect(pauses).toEqual([true, false]);
-    expect(mraid.opened).toHaveLength(1);
+    expect(mraid.opened).toEqual(['https://play.example/app']);
+  });
+
+  it('doesNotOpenAnEmptyStoreUrl', () => {
+    const mraid = fakeMraid('default', true);
+    stubBrowser({ mraid });
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+
+    new MraidAdNetwork().openStore();
+
+    expect(mraid.opened).toEqual([]);
   });
 
   it('startsWithoutTheContainerWhenMraidIsMissing', async () => {

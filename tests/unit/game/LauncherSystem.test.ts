@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { rect } from '../../../src/core/math/Rect';
 import { length, normalize } from '../../../src/core/math/Vec2';
 import { LauncherSystem } from '../../../src/game/launcher/LauncherSystem';
-import { FakeBubbleView, FakeSling, hold, press, release } from './fakes';
+import { cancel, FakeBubbleView, FakeSling, hold, press, release } from './fakes';
 
 const VISIBLE_RECT = rect(-3.79, -7.2, 7.58, 16.4);
 const ANCHOR_Y = -7.2 + 16.4 * (700 / 2436);
@@ -52,9 +52,21 @@ describe('LauncherSystem', () => {
   it('grabsByWhereThePressStartedEvenIfTheFingerMovedInTheSameFrame', () => {
     const { launcher, bubble } = loadedLauncher();
 
-    launcher.update({ world: { x: 0, y: ANCHOR_Y - 0.6 }, pressWorld: launcher.anchor, isPressedThisFrame: true, isHeld: true, isReleasedThisFrame: false });
+    launcher.update({ world: { x: 0, y: ANCHOR_Y - 0.6 }, pressWorld: launcher.anchor, isPressedThisFrame: true, isHeld: true, isReleasedThisFrame: false, isCancelledThisFrame: false });
 
     expect(bubble.position.y).toBeCloseTo(ANCHOR_Y - 0.6, 10);
+  });
+
+  it('cancelledTouchPutsTheBubbleBackWithoutShooting', () => {
+    const { sling, launcher, bubble } = loadedLauncher();
+
+    launcher.update(press(0, ANCHOR_Y));
+    launcher.update(hold(0, ANCHOR_Y - 0.6));
+
+    expect(launcher.update(cancel(0, ANCHOR_Y - 0.6))).toBeNull();
+    expect(bubble.position).toEqual(launcher.anchor);
+    expect(sling.calls.at(-1)).toBe('loaded');
+    expect(launcher.isEmpty).toBe(false);
   });
 
   it('shortPullReleasesBackToReady', () => {

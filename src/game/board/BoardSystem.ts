@@ -1,5 +1,5 @@
 import type { Rect } from '../../core/math/Rect';
-import { normalize, type Vec2 } from '../../core/math/Vec2';
+import { length, normalize, type Vec2 } from '../../core/math/Vec2';
 import type { IRandom } from '../../core/random/IRandom';
 import { BoardGeometry } from '../../domain/board/BoardGeometry';
 import type { BubbleColor } from '../../domain/board/BubbleColor';
@@ -18,6 +18,9 @@ export type PlacedBubble = { readonly cell: GridCell; readonly view: IBubbleView
 export type Settlement = { readonly landedAt: GridCell | null; readonly matched: readonly IBubbleView[] };
 
 type Flight = { readonly bubble: IBubbleView; readonly motion: ProjectileState };
+
+/** A shot never moves more than this fraction of its radius between contact checks, so it cannot tunnel at low frame rates. */
+const MAX_STEP_IN_RADII = 0.5;
 
 /** Owns the bubbles on the board and the one in flight; lands shots on the grid and finds matches. */
 export class BoardSystem {
@@ -73,19 +76,25 @@ export class BoardSystem {
     }
 
     const { bubble } = this._flight;
+    const radius = this._geometry.cellRadius;
     const walls = { leftX: this._geometry.leftWallX, rightX: this._geometry.rightWallX };
-    const motion = stepProjectile(this._flight.motion, deltaSeconds, bubble.radius, walls);
-    bubble.setPosition(motion.position);
-    const others = this.bubbles.map((placed) => ({ position: placed.view.position, radius: placed.view.radius }));
-    if (!isTouching({ position: motion.position, radius: bubble.radius }, this._geometry.topY, others)) {
-      this._flight = { bubble, motion };
+    const others = this.bubbles.map((placed) => ({ position: placed.view.position, radius }));
+    const steps = Math.max(1, Math.ceil((length(this._flight.motion.velocity) * deltaSeconds) / (radius * MAX_STEP_IN_RADII)));
+    let motion = this._flight.motion;
+    for (let step = 0; step < steps; step++) {
+      motion = stepProjectile(motion, deltaSeconds / steps, radius, walls);
+      if (isTouching({ position: motion.position, radius }, this._geometry.topY, others)) {
+        bubble.setPosition(motion.position);
+        this._flight = null;
 
-      return null;
+        return this.land(bubble, motion);
+      }
     }
 
-    this._flight = null;
+    bubble.setPosition(motion.position);
+    this._flight = { bubble, motion };
 
-    return this.land(bubble, motion);
+    return null;
   }
 
   private land(bubble: IBubbleView, motion: ProjectileState): Settlement {

@@ -25,6 +25,10 @@ export class MraidAdNetwork implements IAdNetwork {
 
   openStore(): void {
     const url = storeUrl();
+    if (url === null) {
+      return;
+    }
+
     if (this._mraid === undefined) {
       window.open(url, '_blank');
     } else {

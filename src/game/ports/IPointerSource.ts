@@ -8,6 +8,8 @@ export type PointerSample = {
   readonly isPressedThisFrame: boolean;
   readonly isHeld: boolean;
   readonly isReleasedThisFrame: boolean;
+  /** The system took the touch away (gesture, ad container): not a release, nothing should fire. */
+  readonly isCancelledThisFrame: boolean;
 };
 
 export interface IPointerSource {

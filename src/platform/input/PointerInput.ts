@@ -15,6 +15,7 @@ export class PointerInput implements IPointerSource {
   private _pressScreen: { x: number; y: number } | null = null;
   private _isPressed = false;
   private _isReleased = false;
+  private _isCancelled = false;
 
   constructor(element: HTMLElement, toWorld: ToWorld) {
     this._element = element;
@@ -22,12 +23,13 @@ export class PointerInput implements IPointerSource {
     element.addEventListener('pointerdown', this.onDown);
     element.addEventListener('pointermove', this.onMove);
     element.addEventListener('pointerup', this.onUp);
-    element.addEventListener('pointercancel', this.onUp);
+    element.addEventListener('pointercancel', this.onCancel);
+    element.addEventListener('lostpointercapture', this.onCancel);
   }
 
   poll(): PointerSample | null {
     const isHeld = this._activeId !== null;
-    if (!isHeld && !this._isPressed && !this._isReleased) {
+    if (!isHeld && !this._isPressed && !this._isReleased && !this._isCancelled) {
       return null;
     }
 
@@ -38,8 +40,10 @@ export class PointerInput implements IPointerSource {
       isPressedThisFrame: this._isPressed,
       isHeld,
       isReleasedThisFrame: this._isReleased,
+      isCancelledThisFrame: this._isCancelled,
     };
     this._isPressed = false;
+    this._isCancelled = false;
     this._pressScreen = null;
     this._isReleased = false;
 
@@ -50,7 +54,8 @@ export class PointerInput implements IPointerSource {
     this._element.removeEventListener('pointerdown', this.onDown);
     this._element.removeEventListener('pointermove', this.onMove);
     this._element.removeEventListener('pointerup', this.onUp);
-    this._element.removeEventListener('pointercancel', this.onUp);
+    this._element.removeEventListener('pointercancel', this.onCancel);
+    this._element.removeEventListener('lostpointercapture', this.onCancel);
   }
 
   private readonly onDown = (event: PointerEvent): void => {
@@ -76,6 +81,13 @@ export class PointerInput implements IPointerSource {
       this.track(event);
       this._activeId = null;
       this._isReleased = true;
+    }
+  };
+
+  private readonly onCancel = (event: PointerEvent): void => {
+    if (event.pointerId === this._activeId) {
+      this._activeId = null;
+      this._isCancelled = true;
     }
   };
 

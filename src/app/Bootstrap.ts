@@ -28,7 +28,7 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   exposeToDevtools(app);
 
   const ads = selectAdNetwork(import.meta.env.MODE);
-  const [textures] = await Promise.all([loadAssets(ASSET_MANIFEST), ads.start()]);
+  const textures = await loadAssets(ASSET_MANIFEST);
   let layout = computeViewportLayout(app.screen.width, app.screen.height);
   const pointer = new PointerInput(app.canvas, (x, y) => screenToWorld(layout, x, y));
   const playable = new Playable(textures, randomFromUrl(), pointer, layout, ads);
@@ -37,6 +37,7 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
     layout = computeViewportLayout(app.screen.width, app.screen.height);
     playable.applyLayout(layout);
   });
+  await ads.start();
   app.ticker.add((ticker) => playable.update(Math.min(ticker.deltaMS / 1000, MAX_DELTA_SECONDS)));
   ads.onPauseChange((isPaused) => (isPaused ? app.ticker.stop() : app.ticker.start()));
 

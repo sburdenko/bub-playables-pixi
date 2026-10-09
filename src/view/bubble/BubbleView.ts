@@ -10,7 +10,6 @@ import { WorldSprite } from '../scene/WorldSprite';
 import type { EffectsLayer, ITrail } from '../vfx/EffectsLayer';
 import { MATCH_CLIP, SPAWN_CLIP, SPIN_CLIP } from './bubbleClips';
 
-const BASE_RADIUS = 0.35;
 const ROW_SORTING_STRIDE = 10;
 const SHADOW = { offset: vec2(0, -0.03), scale: 0.161, order: -1 };
 const BODY = { offset: vec2(0, -0.006), scale: 0.162, order: 0 };
@@ -54,10 +53,6 @@ export class BubbleView implements IBubbleView {
     this._flash.blendMode = 'add';
     this.setSorting(0, 'default');
     world.addChild(this._shadow, this._body, this._flash);
-  }
-
-  get radius(): number {
-    return BASE_RADIUS * this._layoutScale;
   }
 
   get position(): Vec2 {
@@ -140,7 +135,7 @@ export class BubbleView implements IBubbleView {
   destroy(): void {
     this._isDestroyed = true;
     this.stopTrail();
-    [this._shadow, this._body, this._flash].forEach((part) => part.destroy());
+    [this._shadow, this._body, this._flash].forEach((part) => part.destroy({ children: true }));
   }
 
   private setSorting(row: number, layer: 'default' | 'top'): void {

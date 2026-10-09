@@ -2,7 +2,10 @@ import { xMax, yMax, type Rect } from '../../core/math/Rect';
 import { distance, vec2, type Vec2 } from '../../core/math/Vec2';
 import { cell, cellKey, isSameCell, type GridCell } from './GridCell';
 
-const BASE_CELL_RADIUS = 0.35;
+/** Bubble radius in world units at layout scale 1; the cell, collision and grab sizes all derive from it. */
+export const BUBBLE_BASE_RADIUS = 0.35;
+
+const BASE_CELL_RADIUS = BUBBLE_BASE_RADIUS;
 const BASE_SPACING_X = 0.75;
 const BASE_SPACING_Y = 0.65;
 const SIDE_MARGIN_IN_CELLS = 0.25;

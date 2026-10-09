@@ -4,8 +4,6 @@ import type { BubbleColor } from '../../domain/board/BubbleColor';
 /** What the board needs from a bubble on screen. Implemented by the view layer. */
 export interface IBubbleView {
   readonly color: BubbleColor;
-  /** Collision radius in world units at the current layout scale. */
-  readonly radius: number;
   /** Where the bubble is drawn right now, wobble included. */
   readonly position: Vec2;
   setLayoutScale(scale: number): void;
