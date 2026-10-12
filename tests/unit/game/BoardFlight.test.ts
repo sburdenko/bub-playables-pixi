@@ -3,7 +3,8 @@ import { rect } from '../../../src/core/math/Rect';
 import { vec2 } from '../../../src/core/math/Vec2';
 import { cell } from '../../../src/domain/board/GridCell';
 import { parseLevel } from '../../../src/domain/level/Level';
-import { BoardSystem, type Settlement } from '../../../src/game/board/BoardSystem';
+import { BoardSystem } from '../../../src/game/board/BoardSystem';
+import type { Settlement } from '../../../src/game/ports/ITurnBoard';
 import { FakeBubbleView, FakeFactory } from './fakes';
 
 const DESIGN_RECT = rect(-3.79, -7.2, 7.58, 16.4);

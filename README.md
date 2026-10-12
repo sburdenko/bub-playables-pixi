@@ -97,6 +97,7 @@ sequenceDiagram
     participant Pixi as PixiJS Application
     participant Loader as platform/AssetLoader
     participant Ads as platform/ads
+    participant Asm as app/assemblePlayable
     participant Game as app/Playable
 
     Main->>Boot: startPlayable(host)
@@ -104,7 +105,8 @@ sequenceDiagram
     Boot->>Ads: selectAdNetwork(build mode)
     Boot->>Loader: loadAssets(ASSET_MANIFEST)
     Loader-->>Boot: TextureLibrary
-    Boot->>Game: new Playable(textures, random, pointer, layout, ads)
+    Boot->>Asm: assemblePlayable(textures, random, pointer, layout, ads, round seconds)
+    Asm-->>Boot: Playable (parts created and wired)
     Boot->>Pixi: stage.addChild(scene)
     Boot->>Ads: start() — waits until the network says the ad is visible
     loop every resize
@@ -157,7 +159,7 @@ stateDiagram-v2
 
 ### One frame
 
-There is one clock: the PixiJS ticker calls `Playable.update(dt)` once per frame. Logic runs first, then every view advances its own animations. Nothing uses timers, promises or callbacks to move the game forward, so a frame can be read top to bottom.
+There is one clock: the PixiJS ticker calls `Playable.update(dt)` once per frame. Logic runs first, then every view advances its own animations; the order is one list built in `app/assemblePlayable.ts`. Nothing uses timers, promises or callbacks to move the game forward, so a frame can be read top to bottom.
 
 ```mermaid
 flowchart LR
@@ -180,7 +182,7 @@ Particle effects are data, not code. Each one is an `EmitterConfig` ported from 
 ```
 src/
 ├─ main.ts            entry point
-├─ app/               composition root: creates objects and wires layers
+├─ app/               composition root: assemblePlayable creates and wires, Playable runs the frame
 ├─ core/              vectors, rectangles, curves, random numbers
 ├─ domain/            game rules: grid, matches, physics, animation, viewport
 ├─ game/              systems (board, sling, attack) and ports to the view

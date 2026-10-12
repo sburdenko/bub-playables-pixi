@@ -3,7 +3,7 @@ import { degreesToRadians, lerp } from '../../core/math/Scalar';
 import { add, distance, vec2, type Vec2 } from '../../core/math/Vec2';
 import { BUBBLE_BASE_RADIUS } from '../../domain/board/BoardGeometry';
 import { travelDistance } from '../../domain/physics/Travel';
-import type { IAttack } from '../flow/TurnFlow';
+import type { IAttack } from '../ports/IAttack';
 import type { IEffects, IOrbView, ITarget } from '../ports/IAttackViews';
 import type { IBubbleView } from '../ports/IBubbleView';
 
