@@ -336,6 +336,7 @@ npm run dev
 - Sprite gallery: <http://localhost:5173/dev/assets.html>
 - From a phone on the same Wi-Fi: the `Network:` address printed by `npm run dev`
 - In dev mode the scene can be inspected with the **PixiJS DevTools** Chrome extension
+- In VS Code, **Run and Debug → Game in Chrome** starts the dev server and opens Chrome attached to the debugger, so breakpoints in `src/` work; **Unit tests** debugs Vitest the same way
 - `?seed=N` makes every random choice repeatable (projectile colours, idle pauses, particles)
 
 | Command | What it does |
