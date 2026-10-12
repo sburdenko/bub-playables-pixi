@@ -3,6 +3,7 @@ import sharp from 'sharp';
 
 const MIN_PIXEL_DEVIATION = 10;
 const END_CARD_TIMEOUT_MS = 40_000;
+const END_CARD_TEST_TIMEOUT_MS = 60_000;
 const REFERENCE_ASPECT = 1125 / 2436;
 const REFERENCE_HALF_HEIGHT = 8.2;
 const CAMERA_Y = 1;
@@ -119,6 +120,7 @@ test('a matching shot plays the attack without errors', async ({ page }) => {
 });
 
 test('after the first attack the end card dims the game and a tap opens the store', async ({ page }) => {
+  test.setTimeout(END_CARD_TEST_TIMEOUT_MS);
   const warnings: string[] = [];
   page.on('console', (message) => message.type() === 'warning' && warnings.push(message.text()));
   await page.goto('/?seed=1');
