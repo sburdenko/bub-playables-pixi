@@ -4,6 +4,7 @@ import sharp from 'sharp';
 const MIN_PIXEL_DEVIATION = 10;
 const END_CARD_TIMEOUT_MS = 40_000;
 const END_CARD_TEST_TIMEOUT_MS = 60_000;
+const TIMER_BAR_HEIGHT_SHARE = 0.045;
 const REFERENCE_ASPECT = 1125 / 2436;
 const REFERENCE_HALF_HEIGHT = 8.2;
 const CAMERA_Y = 1;
@@ -119,10 +120,7 @@ test('a matching shot plays the attack without errors', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('after the first attack the end card dims the game and a tap opens the store', async ({ page }) => {
-  test.setTimeout(END_CARD_TEST_TIMEOUT_MS);
-  const warnings: string[] = [];
-  page.on('console', (message) => message.type() === 'warning' && warnings.push(message.text()));
+test('the game keeps going after an attack while time remains', async ({ page }) => {
   await page.goto('/?seed=1');
   await expect(page.locator('#app')).toHaveAttribute('data-state', 'ready');
   const viewport = page.viewportSize();
@@ -137,6 +135,39 @@ test('after the first attack the end card dims the game and a tap opens the stor
   await page.mouse.down();
   await page.mouse.move(anchor.x, anchor.y + 40, { steps: 5 });
   await page.mouse.up();
+  await page.waitForTimeout(6000);
+
+  expect(await brightness()).toBeGreaterThan(before * 0.85);
+});
+
+test('the timer bar drains while the round runs', async ({ page }) => {
+  await page.goto('/?time=10');
+  await expect(page.locator('#app')).toHaveAttribute('data-state', 'ready');
+  const viewport = page.viewportSize();
+  if (viewport === null) {
+    throw new Error('Viewport size is unknown.');
+  }
+
+  const bar = { x: 0, y: 0, width: viewport.width, height: viewport.height * TIMER_BAR_HEIGHT_SHARE };
+  const full = await page.screenshot({ clip: bar });
+  await page.waitForTimeout(4000);
+
+  expect(Buffer.compare(full, await page.screenshot({ clip: bar }))).not.toBe(0);
+});
+
+test('when the time is up the end card dims the game and a tap opens the store', async ({ page }) => {
+  test.setTimeout(END_CARD_TEST_TIMEOUT_MS);
+  const warnings: string[] = [];
+  page.on('console', (message) => message.type() === 'warning' && warnings.push(message.text()));
+  await page.goto('/?time=4');
+  await expect(page.locator('#app')).toHaveAttribute('data-state', 'ready');
+  const viewport = page.viewportSize();
+  if (viewport === null) {
+    throw new Error('Viewport size is unknown.');
+  }
+
+  const brightness = async () => (await sharp(await page.screenshot()).stats()).channels.slice(0, 3).reduce((sum, channel) => sum + channel.mean, 0);
+  const before = await brightness();
 
   await expect.poll(brightness, { timeout: END_CARD_TIMEOUT_MS, intervals: [500] }).toBeLessThan(before * 0.7);
   await page.mouse.click(viewport.width / 2, viewport.height / 2);

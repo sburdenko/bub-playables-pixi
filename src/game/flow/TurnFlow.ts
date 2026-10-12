@@ -11,8 +11,10 @@ export interface IAttack {
   update(deltaSeconds: number): boolean;
 }
 
-/** When the playable ends: after this many finished attacks, plus a pause to let the moment land. */
-export type EndRule = { readonly afterAttacks: number; readonly delaySeconds: number };
+/** Tells the turn whether the round's time is up. The turn never ends mid-move: it finishes the shot or attack first. */
+export interface IRoundClock {
+  readonly isExpired: boolean;
+}
 
 export type TurnState =
   | { readonly kind: 'awaitingShot' }
@@ -21,24 +23,25 @@ export type TurnState =
   | { readonly kind: 'ending'; readonly timer: number }
   | { readonly kind: 'ended' };
 
-/** Runs a turn: load the sling, wait for the shot, fly it, resolve a match, repeat until the end rule. Systems never call each other. */
+/** Runs a turn: load the sling, wait for the shot, fly it, resolve a match, repeat until the time is up. Systems never call each other. */
 export class TurnFlow {
   private readonly _board: BoardSystem;
   private readonly _launcher: LauncherSystem;
   private readonly _attack: IAttack;
   private readonly _pointer: IPointerSource;
   private readonly _random: IRandom;
-  private readonly _endRule: EndRule;
+  private readonly _clock: IRoundClock;
+  private readonly _endDelaySeconds: number;
   private _state: TurnState = { kind: 'awaitingShot' };
-  private _finishedAttacks = 0;
 
-  constructor(board: BoardSystem, launcher: LauncherSystem, attack: IAttack, pointer: IPointerSource, random: IRandom, endRule: EndRule) {
+  constructor(board: BoardSystem, launcher: LauncherSystem, attack: IAttack, pointer: IPointerSource, random: IRandom, clock: IRoundClock, endDelaySeconds: number) {
     this._board = board;
     this._launcher = launcher;
     this._attack = attack;
     this._pointer = pointer;
     this._random = random;
-    this._endRule = endRule;
+    this._clock = clock;
+    this._endDelaySeconds = endDelaySeconds;
   }
 
   get state(): TurnState {
@@ -53,6 +56,10 @@ export class TurnFlow {
   private next(deltaSeconds: number, pointer: PointerSample | null): TurnState {
     switch (this._state.kind) {
       case 'awaitingShot': {
+        if (this._clock.isExpired) {
+          return { kind: 'ending', timer: this._endDelaySeconds };
+        }
+
         if (this._launcher.isEmpty) {
           this._launcher.load(this._board.createProjectile(this._random));
         }
@@ -81,7 +88,7 @@ export class TurnFlow {
         return { kind: 'resolvingAttack' };
       }
       case 'resolvingAttack':
-        return this._attack.update(deltaSeconds) ? this.afterAttack() : this._state;
+        return this._attack.update(deltaSeconds) ? { kind: 'awaitingShot' } : this._state;
       case 'ending': {
         const timer = this._state.timer - deltaSeconds;
 
@@ -90,11 +97,5 @@ export class TurnFlow {
       case 'ended':
         return this._state;
     }
-  }
-
-  private afterAttack(): TurnState {
-    this._finishedAttacks++;
-
-    return this._finishedAttacks >= this._endRule.afterAttacks ? { kind: 'ending', timer: this._endRule.delaySeconds } : { kind: 'awaitingShot' };
   }
 }

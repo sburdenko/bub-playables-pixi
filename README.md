@@ -143,14 +143,15 @@ The whole world is drawn inside one container, `WorldStage`, whose transform is 
 
 ### Turn flow
 
-Every system is an explicit state machine. Data lives inside the state that needs it, so impossible combinations cannot even be written. Systems do not know each other: the `TurnFlow` mediator polls input every frame and moves the turn forward.
+Every system is an explicit state machine. Data lives inside the state that needs it, so impossible combinations cannot even be written. Systems do not know each other: the `TurnFlow` mediator polls input every frame and moves the turn forward. A shot or attack in progress is never cut off: when the time runs out the turn finishes it first, then ends.
 
 | System | States | What it does |
 |---|---|---|
 | `LauncherSystem` | `empty → ready → aiming` | grabs the bubble, limits the pull to a ±40° cone, shoots opposite to the pull |
 | `BoardSystem` | a shot in flight or not | accelerated flight, wall bounces, landing on the nearest free cell, impact ripple, matches |
 | `MatchAttackSequence` | per bubble `waiting → popping → flying → shrinking → done`; orb `gathering → orbFlying → orbHit` | pops matched bubbles in a stagger, arcs them into the orb, flies the charged orb into the enemy |
-| `TurnFlow` | `awaitingShot → projectileFlying → resolvingAttack → ending → ended` | loads the sling, starts the flight, hands matches to the attack, ends after the configured attacks |
+| `RoundTimer` | counts down from 30 s | drains the timer bar and tells the turn when the time is up |
+| `TurnFlow` | `awaitingShot → projectileFlying → resolvingAttack → ending → ended` | loads the sling, starts the flight, hands matches to the attack, ends once the timer has run out |
 
 ```mermaid
 stateDiagram-v2
@@ -160,8 +161,8 @@ stateDiagram-v2
     projectileFlying --> awaitingShot: landed, no match
     projectileFlying --> resolvingAttack: 5+ bubbles matched
     resolvingAttack --> awaitingShot: attack finished
-    awaitingShot --> ended: end condition
-    resolvingAttack --> ended: end condition
+    awaitingShot --> ending: time is up
+    ending --> ended: short pause
     ended --> [*]: end card and store button
 ```
 
@@ -261,7 +262,7 @@ Each network gets its own single-file build. The Vite mode names the network, an
 
 `npm run build:networks` builds all of them. Store links for MRAID and web builds come from `VITE_STORE_URL_IOS` and `VITE_STORE_URL_ANDROID` (see `.env.example`).
 
-The playable ends after the first attack (`END_RULE` in `app/Playable.ts`): the end card dims the game and any tap calls `openStore()`. The store is only ever opened from a user gesture, as networks require.
+The playable is a timed round of 30 seconds (`DEFAULT_ROUND_SECONDS` in `app/Bootstrap.ts`, `?time=N` overrides it). The bar at the top drains as time passes. When it is empty the turn finishes the shot or attack in progress, the end card dims the game and any tap calls `openStore()`. The store is only ever opened from a user gesture, as networks require.
 
 ---
 
@@ -338,6 +339,7 @@ npm run dev
 - In dev mode the scene can be inspected with the **PixiJS DevTools** Chrome extension
 - In VS Code, **Run and Debug → Game in Chrome** starts the dev server and opens Chrome attached to the debugger, so breakpoints in `src/` work; **Unit tests** debugs Vitest the same way
 - `?seed=N` makes every random choice repeatable (projectile colours, idle pauses, particles)
+- `?time=N` sets the round length in seconds (default 30), e.g. `?time=5` to reach the end card quickly
 
 | Command | What it does |
 |---|---|

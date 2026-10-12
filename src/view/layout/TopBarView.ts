@@ -1,6 +1,7 @@
-import { Container, NineSliceSprite, Sprite, type Texture } from 'pixi.js';
+import { Container, Graphics, NineSliceSprite, Sprite, type Texture } from 'pixi.js';
 import { centerX, yMax } from '../../core/math/Rect';
 import type { ViewportLayout } from '../../domain/layout/ViewportLayout';
+import type { ITimerView } from '../../game/ports/ITimerView';
 import type { ITextureSource } from '../assets/ITextureSource';
 import { sortOrder } from '../scene/sortOrder';
 
@@ -21,21 +22,40 @@ type UiImage = {
   readonly tint?: number;
 };
 
-const IMAGES: readonly UiImage[] = [
-  { textureId: 'turntimer-frame-mask', position: { x: -289.4, y: 3 }, size: { width: 672.9, height: 128 }, pivot: { x: 0, y: 0.5 }, isSliced: true, tint: FILL_TINT },
+const FILL_IMAGE: UiImage = { textureId: 'turntimer-frame-mask', position: { x: -289.4, y: 3 }, size: { width: 672.9, height: 128 }, pivot: { x: 0, y: 0.5 }, isSliced: true, tint: FILL_TINT };
+
+const OVERLAY_IMAGES: readonly UiImage[] = [
   { textureId: 't-gameui-turntimer-frame-hero', position: { x: 0, y: 0 }, size: { width: 826.8, height: 190 }, pivot: { x: 0.5, y: 0.5 }, isSliced: true },
   { textureId: 't-gameui-turntimer-icon-hero', position: { x: -335.5, y: 3 }, size: { width: 149, height: 180 }, pivot: { x: 0.5, y: 0.5 }, isSliced: false },
 ];
 
+type BuiltImage = { readonly holder: Container; readonly graphic: Container; readonly width: number; readonly height: number };
+
 /**
- * Static "your turn" bar from the Unity canvas (screen-space, 1125x2436 reference, matched by height). Children are
- * laid out in canvas pixels; the bar scales canvas pixels to world units.
+ * The top bar from the Unity canvas (screen-space, 1125x2436 reference, matched by height): a timer fill in a frame with
+ * an icon. Children are laid out in canvas pixels; the bar scales canvas pixels to world units. The fill drains from
+ * right to left by clipping it with a mask, so its rounded shape is cut the way Unity's filled image is.
  */
-export class TopBarView extends Container {
+export class TopBarView extends Container implements ITimerView {
+  private readonly _fillMask: Graphics;
+  private readonly _fill: Container;
+
   constructor(textures: ITextureSource) {
     super();
     this.zIndex = sortOrder(SORT_ORDER);
-    this.addChild(...IMAGES.map((image) => createImage(textures, image)));
+    const fill = createImage(textures, FILL_IMAGE);
+    this._fill = fill.graphic;
+    this._fillMask = new Graphics().rect(0, 0, fill.width, fill.height).fill(0xffffff);
+    this._fillMask.position.set(fill.graphic.x, fill.graphic.y);
+    fill.holder.addChild(this._fillMask);
+    fill.graphic.mask = this._fillMask;
+    this.addChild(fill.holder, ...OVERLAY_IMAGES.map((image) => createImage(textures, image).holder));
+  }
+
+  setFractionLeft(fraction: number): void {
+    const clamped = Math.min(Math.max(fraction, 0), 1);
+    this._fillMask.scale.x = clamped;
+    this._fill.visible = clamped > 0;
   }
 
   applyLayout({ visibleRect }: ViewportLayout): void {
@@ -45,7 +65,7 @@ export class TopBarView extends Container {
   }
 }
 
-function createImage(textures: ITextureSource, image: UiImage): Container {
+function createImage(textures: ITextureSource, image: UiImage): BuiltImage {
   const texture = textures.get(image.textureId);
   const textureScale = CANVAS_PIXELS_PER_UNIT / textures.pixelsPerUnit(image.textureId);
   const width = image.size.width / textureScale;
@@ -61,7 +81,7 @@ function createImage(textures: ITextureSource, image: UiImage): Container {
   holder.scale.set(textureScale, -textureScale);
   holder.addChild(graphic);
 
-  return holder;
+  return { holder, graphic, width, height };
 }
 
 function sizedSprite(texture: Texture, width: number, height: number): Sprite {
