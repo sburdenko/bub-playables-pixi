@@ -3,9 +3,11 @@ import { rect } from '../../../src/core/math/Rect';
 import { cell } from '../../../src/domain/board/GridCell';
 import { parseLevel } from '../../../src/domain/level/Level';
 import { BoardSystem } from '../../../src/game/board/BoardSystem';
-import { TurnFlow, type IAttack, type IRoundClock } from '../../../src/game/flow/TurnFlow';
+import { TurnFlow } from '../../../src/game/flow/TurnFlow';
 import { LauncherSystem } from '../../../src/game/launcher/LauncherSystem';
+import type { IAttack } from '../../../src/game/ports/IAttack';
 import type { IBubbleView } from '../../../src/game/ports/IBubbleView';
+import type { IRoundClock } from '../../../src/game/ports/IRoundClock';
 import { FakeFactory, FakeSling, hold, press, release, ScriptedPointer } from './fakes';
 
 const DESIGN_RECT = rect(-3.79, -7.2, 7.58, 16.4);

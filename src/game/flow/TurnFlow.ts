@@ -1,20 +1,9 @@
 import type { IRandom } from '../../core/random/IRandom';
-import type { BoardSystem } from '../board/BoardSystem';
-import type { LauncherSystem } from '../launcher/LauncherSystem';
-import type { IBubbleView } from '../ports/IBubbleView';
+import type { IAttack } from '../ports/IAttack';
 import type { IPointerSource, PointerSample } from '../ports/IPointerSource';
-
-/** What happens to matched bubbles. The attack sequence takes ownership and reports when it is over. */
-export interface IAttack {
-  play(matched: readonly IBubbleView[], layoutScale: number): void;
-  /** Advances the attack; returns true once it has finished. */
-  update(deltaSeconds: number): boolean;
-}
-
-/** Tells the turn whether the round's time is up. The turn never ends mid-move: it finishes the shot or attack first. */
-export interface IRoundClock {
-  readonly isExpired: boolean;
-}
+import type { IRoundClock } from '../ports/IRoundClock';
+import type { ITurnBoard } from '../ports/ITurnBoard';
+import type { ITurnLauncher } from '../ports/ITurnLauncher';
 
 export type TurnState =
   | { readonly kind: 'awaitingShot' }
@@ -25,8 +14,8 @@ export type TurnState =
 
 /** Runs a turn: load the sling, wait for the shot, fly it, resolve a match, repeat until the time is up. Systems never call each other. */
 export class TurnFlow {
-  private readonly _board: BoardSystem;
-  private readonly _launcher: LauncherSystem;
+  private readonly _board: ITurnBoard;
+  private readonly _launcher: ITurnLauncher;
   private readonly _attack: IAttack;
   private readonly _pointer: IPointerSource;
   private readonly _random: IRandom;
@@ -34,7 +23,7 @@ export class TurnFlow {
   private readonly _endDelaySeconds: number;
   private _state: TurnState = { kind: 'awaitingShot' };
 
-  constructor(board: BoardSystem, launcher: LauncherSystem, attack: IAttack, pointer: IPointerSource, random: IRandom, clock: IRoundClock, endDelaySeconds: number) {
+  constructor(board: ITurnBoard, launcher: ITurnLauncher, attack: IAttack, pointer: IPointerSource, random: IRandom, clock: IRoundClock, endDelaySeconds: number) {
     this._board = board;
     this._launcher = launcher;
     this._attack = attack;
@@ -83,7 +72,7 @@ export class TurnFlow {
           return { kind: 'awaitingShot' };
         }
 
-        this._attack.play(settlement.matched, this._board.geometry.scale);
+        this._attack.play(settlement.matched, this._board.layoutScale);
 
         return { kind: 'resolvingAttack' };
       }

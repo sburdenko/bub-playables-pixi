@@ -1,73 +1,53 @@
-import type { IRandom } from '../core/random/IRandom';
-import { parseLevel } from '../domain/level/Level';
-import { OPENING_LEVEL_ROWS } from '../domain/level/openingLevel';
 import type { ViewportLayout } from '../domain/layout/ViewportLayout';
-import { MatchAttackSequence } from '../game/attack/MatchAttackSequence';
-import { BoardSystem } from '../game/board/BoardSystem';
-import { RoundTimer } from '../game/flow/RoundTimer';
-import { TurnFlow } from '../game/flow/TurnFlow';
-import { LauncherSystem } from '../game/launcher/LauncherSystem';
-import type { IPointerSource } from '../game/ports/IPointerSource';
+import type { BoardSystem } from '../game/board/BoardSystem';
+import type { TurnFlow } from '../game/flow/TurnFlow';
+import type { LauncherSystem } from '../game/launcher/LauncherSystem';
+import type { IUpdatable } from '../game/ports/IUpdatable';
 import type { IAdNetwork } from '../platform/ads/IAdNetwork';
-import type { ITextureSource } from '../view/assets/ITextureSource';
-import { OrbView } from '../view/attack/OrbView';
-import { BubbleLayer } from '../view/bubble/BubbleLayer';
-import { EndCardView } from '../view/endcard/EndCardView';
-import { SlingView } from '../view/launcher/SlingView';
-import { SceneView } from '../view/scene/SceneView';
-import { EffectsLayer } from '../view/vfx/EffectsLayer';
+import type { EndCardView } from '../view/endcard/EndCardView';
+import type { SceneView } from '../view/scene/SceneView';
 
-/** After the time is up the end card waits this long, so the last shot or attack can land. */
-const END_DELAY_SECONDS = 1.5;
-
-/** The running game: scene, board, sling, attack, round timer, end card and the turn that drives them. Created once the first layout is known. */
-export class Playable {
+/** Everything the running game needs, already created and wired by `assemblePlayable`. */
+export type PlayableParts = {
   readonly scene: SceneView;
-  private readonly _effects: EffectsLayer;
-  private readonly _bubbles: BubbleLayer;
-  private readonly _sling: SlingView;
-  private readonly _board: BoardSystem;
-  private readonly _launcher: LauncherSystem;
-  private readonly _timer: RoundTimer;
-  private readonly _turn: TurnFlow;
-  private readonly _endCard: EndCardView;
-  private readonly _ads: IAdNetwork;
+  readonly board: BoardSystem;
+  readonly launcher: LauncherSystem;
+  readonly endCard: EndCardView;
+  readonly turn: TurnFlow;
+  readonly ads: IAdNetwork;
+  /** Advanced once per frame, in this order: logic first, then the views. */
+  readonly frame: readonly IUpdatable[];
+};
 
-  constructor(textures: ITextureSource, random: IRandom, pointer: IPointerSource, layout: ViewportLayout, ads: IAdNetwork, roundSeconds: number) {
-    this._ads = ads;
-    this.scene = new SceneView(textures, random);
-    this._effects = new EffectsLayer(textures, this.scene.world, random);
-    this._bubbles = new BubbleLayer(textures, this.scene.world, this._effects);
-    this._sling = new SlingView(textures);
-    const orb = new OrbView(textures);
-    this._endCard = new EndCardView(textures, () => ads.openStore());
-    this.scene.world.addChild(...this._sling.parts, orb, this._endCard);
-    this._board = new BoardSystem(parseLevel(OPENING_LEVEL_ROWS), this._bubbles, layout.designRect);
-    this._launcher = new LauncherSystem(this._sling);
-    const attack = new MatchAttackSequence(orb, this.scene.bottom.enemy, this._effects);
-    this._timer = new RoundTimer(roundSeconds, this.scene.timer);
-    this._turn = new TurnFlow(this._board, this._launcher, attack, pointer, random, this._timer, END_DELAY_SECONDS);
-    this.applyLayout(layout);
+/** The running game: advances its parts every frame, relays layout changes and shows the end card once the turn is over. */
+export class Playable {
+  private readonly _parts: PlayableParts;
+
+  constructor(parts: PlayableParts) {
+    this._parts = parts;
+  }
+
+  get scene(): SceneView {
+    return this._parts.scene;
   }
 
   applyLayout(layout: ViewportLayout): void {
-    this.scene.applyLayout(layout);
-    this._board.applyLayout(layout.designRect);
-    this._launcher.applyLayout(layout.visibleRect, this._board.geometry.scale);
-    this._endCard.applyLayout(layout);
+    const { scene, board, launcher, endCard } = this._parts;
+    scene.applyLayout(layout);
+    board.applyLayout(layout.designRect);
+    launcher.applyLayout(layout.visibleRect, board.layoutScale);
+    endCard.applyLayout(layout);
   }
 
   update(deltaSeconds: number): void {
-    this._timer.update(deltaSeconds);
-    this._turn.update(deltaSeconds);
-    this.scene.update(deltaSeconds);
-    this._sling.update(deltaSeconds);
-    this._bubbles.update(deltaSeconds);
-    this._effects.update(deltaSeconds);
-    this._endCard.update(deltaSeconds);
-    if (this._turn.state.kind === 'ended' && !this._endCard.isShown) {
-      this._endCard.show();
-      this._ads.notifyEnded();
+    const { frame, turn, endCard, ads } = this._parts;
+    for (const part of frame) {
+      part.update(deltaSeconds);
+    }
+
+    if (turn.state.kind === 'ended' && !endCard.isShown) {
+      endCard.show();
+      ads.notifyEnded();
     }
   }
 }

@@ -5,6 +5,7 @@ import { clampPull } from '../../domain/launcher/AimMath';
 import type { IBubbleView } from '../ports/IBubbleView';
 import type { PointerSample } from '../ports/IPointerSource';
 import type { ISlingView } from '../ports/ISlingView';
+import type { ITurnLauncher, Shot } from '../ports/ITurnLauncher';
 
 const ANCHOR_HEIGHT_FROM_BOTTOM = 700 / 2436;
 const MAX_PULL_DISTANCE = 0.85;
@@ -14,14 +15,12 @@ const LAUNCH_SPEED = 12;
 const GRAB_RADIUS_FACTOR = 1.8;
 const MAX_AIM_LINE_LENGTH = 3.15;
 
-export type Shot = { readonly bubble: IBubbleView; readonly position: Vec2; readonly velocity: Vec2 };
-
 type AimingState = { readonly kind: 'aiming'; readonly bubble: IBubbleView; readonly pull: Vec2 };
 
 type LauncherState = { readonly kind: 'empty' } | { readonly kind: 'ready'; readonly bubble: IBubbleView } | AimingState;
 
 /** The sling: grab the loaded bubble, pull it down within a cone, release to shoot opposite to the pull. */
-export class LauncherSystem {
+export class LauncherSystem implements ITurnLauncher {
   private readonly _sling: ISlingView;
   private _state: LauncherState = { kind: 'empty' };
   private _anchor: Vec2 = ZERO;

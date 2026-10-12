@@ -11,11 +11,9 @@ import { levelRowWidths, type Level } from '../../domain/level/Level';
 import { isTouching } from '../../domain/physics/ContactRule';
 import { stepProjectile, type ProjectileState } from '../../domain/physics/ProjectileMotion';
 import type { IBubbleView, IBubbleViewFactory } from '../ports/IBubbleView';
+import type { ITurnBoard, Settlement } from '../ports/ITurnBoard';
 
 export type PlacedBubble = { readonly cell: GridCell; readonly view: IBubbleView };
-
-/** How a shot ended: where it landed (null when the board was full) and the bubbles it matched, now off the board. */
-export type Settlement = { readonly landedAt: GridCell | null; readonly matched: readonly IBubbleView[] };
 
 type Flight = { readonly bubble: IBubbleView; readonly motion: ProjectileState };
 
@@ -23,7 +21,7 @@ type Flight = { readonly bubble: IBubbleView; readonly motion: ProjectileState }
 const MAX_STEP_IN_RADII = 0.5;
 
 /** Owns the bubbles on the board and the one in flight; lands shots on the grid and finds matches. */
-export class BoardSystem {
+export class BoardSystem implements ITurnBoard {
   private readonly _rowWidths: readonly number[];
   private readonly _factory: IBubbleViewFactory;
   private readonly _bubbles = new Map<string, PlacedBubble>();
@@ -35,6 +33,10 @@ export class BoardSystem {
     this._factory = factory;
     this._geometry = new BoardGeometry(this._rowWidths, designRect);
     level.rows.forEach((row, rowIndex) => row.forEach((color, column) => color !== null && this.add(cell(rowIndex, column), this.create(color))));
+  }
+
+  get layoutScale(): number {
+    return this._geometry.scale;
   }
 
   get geometry(): BoardGeometry {

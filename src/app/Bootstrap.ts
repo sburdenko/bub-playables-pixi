@@ -7,7 +7,7 @@ import { ASSET_MANIFEST } from '../generated/assets';
 import { selectAdNetwork } from '../platform/ads/selectAdNetwork';
 import { loadAssets } from '../platform/assets/AssetLoader';
 import { PointerInput } from '../platform/input/PointerInput';
-import { Playable } from './Playable';
+import { assemblePlayable } from './assemblePlayable';
 
 const MAX_RESOLUTION = 2;
 const CLEAR_COLOR = 0x000000;
@@ -33,7 +33,7 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   const textures = await loadAssets(ASSET_MANIFEST);
   let layout = computeViewportLayout(app.screen.width, app.screen.height);
   const pointer = new PointerInput(app.canvas, (x, y) => screenToWorld(layout, x, y));
-  const playable = new Playable(textures, randomFromUrl(), pointer, layout, ads, roundSecondsFromUrl());
+  const playable = assemblePlayable(textures, randomFromUrl(), pointer, layout, ads, roundSecondsFromUrl());
   app.stage.addChild(playable.scene);
   app.renderer.on('resize', () => {
     layout = computeViewportLayout(app.screen.width, app.screen.height);

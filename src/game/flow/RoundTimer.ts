@@ -1,7 +1,7 @@
 import { advanceCountdown, createCountdown, fractionLeft, isExpired, type Countdown } from '../../domain/time/Countdown';
 import { timerTint } from '../../domain/time/TimerTint';
+import type { IRoundClock } from '../ports/IRoundClock';
 import type { ITimerView } from '../ports/ITimerView';
-import type { IRoundClock } from './TurnFlow';
 
 /** The round's clock: counts the time down and keeps the timer bar in step with it. */
 export class RoundTimer implements IRoundClock {
