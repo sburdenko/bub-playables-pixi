@@ -40,7 +40,7 @@ export class Playable {
     this._bubbles = new BubbleLayer(textures, this.scene.world, this._effects);
     this._sling = new SlingView(textures);
     const orb = new OrbView(textures);
-    this._endCard = new EndCardView(() => ads.openStore());
+    this._endCard = new EndCardView(textures, () => ads.openStore());
     this.scene.world.addChild(...this._sling.parts, orb, this._endCard);
     this._board = new BoardSystem(parseLevel(OPENING_LEVEL_ROWS), this._bubbles, layout.designRect);
     this._launcher = new LauncherSystem(this._sling);
