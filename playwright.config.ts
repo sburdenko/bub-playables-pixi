@@ -5,8 +5,10 @@ const PORT = 4173;
 export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
-  reporter: [['list']],
+  forbidOnly: Boolean(process.env.CI),
+  reporter: process.env.CI ? [['github'], ['list']] : [['list']],
   use: {
+    trace: 'retain-on-failure',
     baseURL: `http://localhost:${PORT}`,
     channel: 'chrome',
   },
