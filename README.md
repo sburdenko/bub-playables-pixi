@@ -1,8 +1,14 @@
 # Bubble Playable
 
+[![CI](https://github.com/sburdenko/bub-playables-pixi/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sburdenko/bub-playables-pixi/actions/workflows/ci.yml)
+
+### [▶ Play the latest build](https://sburdenko.github.io/bub-playables-pixi/)
+
+Rebuilt and redeployed on every merge into `main`. Works on desktop and phones; add `?seed=1` for a repeatable game.
+
 A bubble shooter playable ad built with **TypeScript + PixiJS 8**. The build output is **a single `index.html`** of at most 4.5 MB that is uploaded to ad networks.
 
-> The art and font (`assets-src/`) belong to third parties and are not part of this repository. Without that folder the code can be read but the game cannot be built.
+> The art and font (`assets-src/`) belong to third parties and are not part of this repository. Without that folder the code can be read but the game cannot be built locally; CI fetches it from a private repository (see [CI and releases](#ci-and-releases)).
 
 | Stage | Scope | Status |
 |---|---|---|
@@ -101,14 +107,17 @@ sequenceDiagram
     participant Boot as app/Bootstrap
     participant Pixi as PixiJS Application
     participant Loader as platform/AssetLoader
+    participant Ads as platform/ads
     participant Game as app/Playable
 
     Main->>Boot: startPlayable(host)
     Boot->>Pixi: init(resizeTo host, resolution ≤ 2)
+    Boot->>Ads: selectAdNetwork(build mode)
     Boot->>Loader: loadAssets(ASSET_MANIFEST)
     Loader-->>Boot: TextureLibrary
-    Boot->>Game: new Playable(textures, random, pointer, layout)
+    Boot->>Game: new Playable(textures, random, pointer, layout, ads)
     Boot->>Pixi: stage.addChild(scene)
+    Boot->>Ads: start() — waits until the network says the ad is visible
     loop every resize
         Pixi->>Boot: screen size
         Boot->>Game: applyLayout(computeViewportLayout(w, h))
@@ -156,6 +165,22 @@ stateDiagram-v2
     ended --> [*]: end card and store button
 ```
 
+### One frame
+
+There is one clock: the PixiJS ticker calls `Playable.update(dt)` once per frame. Logic runs first, then every view advances its own animations. Nothing uses timers, promises or callbacks to move the game forward, so a frame can be read top to bottom.
+
+```mermaid
+flowchart LR
+    tick["PixiJS ticker<br/>dt ≤ 0.1 s"] --> play["Playable.update"]
+    play --> turn["TurnFlow.update"]
+    turn --> poll["pointer.poll()"]
+    turn --> sys["LauncherSystem · BoardSystem · MatchAttackSequence<br/><i>whichever the current state needs</i>"]
+    sys -. ports .-> ports["IBubbleView · ISlingView · IOrbView · IEffects"]
+    play --> views["SceneView · SlingView · BubbleLayer · EffectsLayer · EndCardView<br/>advance their animations"]
+    play --> ended{"turn ended?"}
+    ended -->|yes, once| card["show end card<br/>ads.notifyEnded()"]
+```
+
 ### Effects
 
 Particle effects are data, not code. Each one is an `EmitterConfig` ported from the original particle systems (burst count, lifetime, speed with a dampened speed limit, size and alpha over lifetime, additive or normal blending). `domain/vfx/Particles` simulates them as pure functions; `view/vfx` only draws them.
@@ -180,6 +205,7 @@ tools/
 tests/
 ├─ unit/              Vitest
 └─ e2e/               Playwright
+.github/workflows/    CI: verify every PR, deploy main to Pages
 ```
 
 ---
@@ -246,7 +272,7 @@ flowchart LR
     a[assets:build] --> b[lint<br/>layer boundaries] --> c[typecheck<br/>strict] --> d[unit tests<br/>coverage ≥ 80%] --> e[builds<br/>web + 4 networks] --> f[size<br/>each ≤ 4.5 MB] --> g[e2e<br/>in Chrome]
 ```
 
-`npm run verify` runs the whole chain. Any failing step stops it.
+`npm run verify` runs the whole chain. Any failing step stops it. CI runs the same command, so a green local run means a green pipeline.
 
 | Level | Tool | What it checks |
 |---|---|---|
@@ -261,6 +287,30 @@ flowchart LR
 - **Draw calls.** Sprites come from six atlases, so the board, characters and effects batch into a handful of draw calls.
 - **No tunnelling.** The shot is sub-stepped so it never moves more than half its radius between contact checks, even at low frame rates.
 - **No leaks.** Particle batches, floating numbers, trails and popped bubbles all destroy themselves; after several turns the world holds only the static scene and three sprites per bubble.
+
+---
+
+## CI and releases
+
+```mermaid
+flowchart LR
+    branch["feature branch"] --> pr["pull request"]
+    pr --> verify["<b>Verify</b><br/>npm run verify"]
+    verify -->|green| merge["merge into main"]
+    merge --> verify2["<b>Verify</b> on main"]
+    verify2 --> pages["<b>Deploy</b><br/>GitHub Pages"]
+    verify2 --> artifact["builds artifact<br/>web + 4 networks"]
+    pages --> link["▶ latest build link"]
+```
+
+The workflow is [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
+- **Every pull request** runs the `Verify` job: the full `npm run verify` chain in Chrome on Ubuntu.
+- **Every merge into `main`** runs `Verify` again and then deploys `dist/` to GitHub Pages. The [latest build](https://sburdenko.github.io/bub-playables-pixi/) link always points at the newest `main`.
+- **Ad network builds** (`dist/<network>/index.html`) are attached to each run as the `builds-<commit>` artifact for 30 days, ready to upload to a network.
+- **Art in CI.** `assets-src/` is checked out from a private repository with a read-only deploy key stored in the `ASSETS_DEPLOY_KEY` secret. The art never enters this repository's history, but it does ship inside every built `index.html`, as in any playable ad.
+
+**`main` is protected.** Changes land only through a pull request with a green `Verify` check and an up-to-date branch. Direct pushes, force pushes and deleting `main` are blocked, for administrators too.
 
 ---
 
