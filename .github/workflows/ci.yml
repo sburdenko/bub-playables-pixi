@@ -22,13 +22,18 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v5
 
-      # The art is third-party and lives in a private repository; a read-only deploy key fetches it.
-      - name: Check out source art
-        uses: actions/checkout@v5
-        with:
-          repository: sburdenko/bub-playables-assets
-          ssh-key: ${{ secrets.ASSETS_DEPLOY_KEY }}
-          path: assets-src
+      # assets-src is a submodule of a private repository; a read-only deploy key fetches it.
+      - name: Fetch source art
+        env:
+          ASSETS_DEPLOY_KEY: ${{ secrets.ASSETS_DEPLOY_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$ASSETS_DEPLOY_KEY" > ~/.ssh/assets_key
+          chmod 600 ~/.ssh/assets_key
+          ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+          GIT_SSH_COMMAND="ssh -i $HOME/.ssh/assets_key -o IdentitiesOnly=yes" \
+            git -c url."git@github.com:".insteadOf="https://github.com/" submodule update --init assets-src
+          rm -f ~/.ssh/assets_key
 
       - name: Set up Node
         uses: actions/setup-node@v5

@@ -8,7 +8,7 @@ Rebuilt and redeployed on every merge into `main`. Works on desktop and phones; 
 
 A bubble shooter playable ad built with **TypeScript + PixiJS 8**. The build output is **a single `index.html`** of at most 4.5 MB that is uploaded to ad networks.
 
-> The art and font (`assets-src/`) belong to third parties and are not part of this repository. Without that folder the code can be read but the game cannot be built locally; CI fetches it from a private repository (see [CI and releases](#ci-and-releases)).
+> The art and font belong to third parties and live in a **private repository**, mounted here as the `assets-src/` git submodule. Without access to it the code can be read but the game cannot be built (see [Getting started](#getting-started) and [CI and releases](#ci-and-releases)).
 
 | Stage | Scope | Status |
 |---|---|---|
@@ -243,7 +243,7 @@ flowchart LR
 - Assets are imported as modules: Vite serves them in dev and the build inlines them into `index.html`. The playable makes no external requests.
 - A folder without a rule fails the build: what ships, and how, is always an explicit decision.
 
-**Adding an image:** put the PNG in `assets-src/<group>/`, add an entry to `assets-src/catalog.json` (`id`, `file`, `width`, `height`, `pixelsPerUnit`, `anchor`, `borders`) and run `npm run assets:build`. The image is then available in code by `id`.
+**Adding an image:** put the PNG in `assets-src/<group>/`, add an entry to `assets-src/catalog.json` (`id`, `file`, `width`, `height`, `pixelsPerUnit`, `anchor`, `borders`) and run `npm run assets:build`. The image is then available in code by `id`. The art lives in the private repository, so commit and push it there first (`cd assets-src && git add -A && git commit && git push`), then commit the updated `assets-src` pointer here: that ties each code version to an art version.
 
 ---
 
@@ -308,7 +308,7 @@ The workflow is [.github/workflows/ci.yml](.github/workflows/ci.yml).
 - **Every pull request** runs the `Verify` job: the full `npm run verify` chain in Chrome on Ubuntu.
 - **Every merge into `main`** runs `Verify` again and then deploys `dist/` to GitHub Pages. The [latest build](https://sburdenko.github.io/bub-playables-pixi/) link always points at the newest `main`.
 - **Ad network builds** (`dist/<network>/index.html`) are attached to each run as the `builds-<commit>` artifact for 30 days, ready to upload to a network.
-- **Art in CI.** `assets-src/` is checked out from a private repository with a read-only deploy key stored in the `ASSETS_DEPLOY_KEY` secret. The art never enters this repository's history, but it does ship inside every built `index.html`, as in any playable ad.
+- **Art in CI.** `assets-src/` is a git submodule of the private `bub-playables-assets` repository. CI fetches it with a read-only deploy key stored in the `ASSETS_DEPLOY_KEY` secret. The art never enters this repository's history, but it does ship inside every built `index.html`, as in any playable ad.
 
 **`main` is protected.** Changes land only through a pull request with a green `Verify` check and an up-to-date branch. Direct pushes, force pushes and deleting `main` are blocked, for administrators too.
 
@@ -317,8 +317,12 @@ The workflow is [.github/workflows/ci.yml](.github/workflows/ci.yml).
 ## Getting started
 
 ```bash
+git clone --recurse-submodules https://github.com/sburdenko/bub-playables-pixi.git
+cd bub-playables-pixi
 npm install
 ```
+
+The `assets-src/` submodule needs access to the private art repository. Cloned without it, the folder stays empty and `npm run assets:build` fails.
 
 ```bash
 npm run assets:build
