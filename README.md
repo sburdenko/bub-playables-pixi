@@ -10,17 +10,6 @@ A bubble shooter playable ad built with **TypeScript + PixiJS 8**. The build out
 
 > The art and font belong to third parties and live in a **private repository**, mounted here as the `assets-src/` git submodule. Without access to it the code can be read but the game cannot be built (see [Getting started](#getting-started) and [CI and releases](#ci-and-releases)).
 
-| Stage | Scope | Status |
-|---|---|---|
-| P0 | Scaffold, asset pipeline, quality gates | ✅ |
-| P1 | Game rules without graphics: grid, matches, projectile physics | ✅ |
-| P2 | Scene and layout for any screen | ✅ |
-| P3 | Bubble board | ✅ |
-| P4 | Sling, shot, flight, landing | ✅ |
-| P5 | Attack: bubbles fly into the orb, the orb hits the enemy, effects | ✅ |
-| P6 | Ad networks, end card, builds | ✅ |
-| P7 | Performance, QA | ✅ |
-
 ---
 
 ## Architecture
@@ -262,7 +251,7 @@ Each network gets its own single-file build. The Vite mode names the network, an
 
 `npm run build:networks` builds all of them. Store links for MRAID and web builds come from `VITE_STORE_URL_IOS` and `VITE_STORE_URL_ANDROID` (see `.env.example`).
 
-The playable is a timed round of 30 seconds (`DEFAULT_ROUND_SECONDS` in `app/Bootstrap.ts`, `?time=N` overrides it). The bar at the top drains as time passes. When it is empty the turn finishes the shot or attack in progress, the end card dims the game and any tap calls `openStore()`. The store is only ever opened from a user gesture, as networks require.
+The playable is a timed round of 30 seconds (`DEFAULT_ROUND_SECONDS` in `app/Bootstrap.ts`, `?time=N` overrides it). The bar at the top drains as time passes: green for the first half of the round, then it fades to orange and later to red, each fade over two seconds (`domain/time/TimerTint`). When it is empty the turn finishes the shot or attack in progress, the end card dims the game and any tap calls `openStore()`. The store is only ever opened from a user gesture, as networks require.
 
 ---
 
