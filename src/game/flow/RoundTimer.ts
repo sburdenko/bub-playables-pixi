@@ -1,4 +1,5 @@
 import { advanceCountdown, createCountdown, fractionLeft, isExpired, type Countdown } from '../../domain/time/Countdown';
+import { timerTint } from '../../domain/time/TimerTint';
 import type { ITimerView } from '../ports/ITimerView';
 import type { IRoundClock } from './TurnFlow';
 
@@ -10,7 +11,7 @@ export class RoundTimer implements IRoundClock {
   constructor(durationSeconds: number, view: ITimerView) {
     this._countdown = createCountdown(durationSeconds);
     this._view = view;
-    this._view.setFractionLeft(fractionLeft(this._countdown));
+    this.showCountdown();
   }
 
   get isExpired(): boolean {
@@ -19,6 +20,10 @@ export class RoundTimer implements IRoundClock {
 
   update(deltaSeconds: number): void {
     this._countdown = advanceCountdown(this._countdown, deltaSeconds);
-    this._view.setFractionLeft(fractionLeft(this._countdown));
+    this.showCountdown();
+  }
+
+  private showCountdown(): void {
+    this._view.show({ fractionLeft: fractionLeft(this._countdown), tint: timerTint(this._countdown) });
   }
 }

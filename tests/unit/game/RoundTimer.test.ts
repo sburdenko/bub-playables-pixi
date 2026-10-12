@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { RoundTimer } from '../../../src/game/flow/RoundTimer';
-import type { ITimerView } from '../../../src/game/ports/ITimerView';
+import { TIMER_GREEN, TIMER_RED } from '../../../src/domain/time/TimerTint';
+import type { ITimerView, TimerLook } from '../../../src/game/ports/ITimerView';
 
 class FakeTimerView implements ITimerView {
-  fractions: number[] = [];
+  looks: TimerLook[] = [];
 
-  setFractionLeft(fraction: number): void {
-    this.fractions.push(fraction);
+  show(look: TimerLook): void {
+    this.looks.push(look);
   }
 }
 
@@ -15,7 +16,7 @@ describe('RoundTimer', () => {
     const view = new FakeTimerView();
     const timer = new RoundTimer(30, view);
 
-    expect(view.fractions).toEqual([1]);
+    expect(view.looks).toEqual([{ fractionLeft: 1, tint: TIMER_GREEN }]);
     expect(timer.isExpired).toBe(false);
   });
 
@@ -25,7 +26,7 @@ describe('RoundTimer', () => {
 
     timer.update(2.5);
 
-    expect(view.fractions.at(-1)).toBeCloseTo(0.75);
+    expect(view.looks.at(-1)?.fractionLeft).toBeCloseTo(0.75);
   });
 
   it('expiresAfterTheDurationAndKeepsTheBarEmpty', () => {
@@ -38,6 +39,6 @@ describe('RoundTimer', () => {
     timer.update(0.6);
 
     expect(timer.isExpired).toBe(true);
-    expect(view.fractions.at(-1)).toBe(0);
+    expect(view.looks.at(-1)).toEqual({ fractionLeft: 0, tint: TIMER_RED });
   });
 });
