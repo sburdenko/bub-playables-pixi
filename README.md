@@ -10,17 +10,6 @@ A bubble shooter playable ad built with **TypeScript + PixiJS 8**. The build out
 
 > The art and font belong to third parties and live in a **private repository**, mounted here as the `assets-src/` git submodule. Without access to it the code can be read but the game cannot be built (see [Getting started](#getting-started) and [CI and releases](#ci-and-releases)).
 
-| Stage | Scope | Status |
-|---|---|---|
-| P0 | Scaffold, asset pipeline, quality gates | ✅ |
-| P1 | Game rules without graphics: grid, matches, projectile physics | ✅ |
-| P2 | Scene and layout for any screen | ✅ |
-| P3 | Bubble board | ✅ |
-| P4 | Sling, shot, flight, landing | ✅ |
-| P5 | Attack: bubbles fly into the orb, the orb hits the enemy, effects | ✅ |
-| P6 | Ad networks, end card, builds | ✅ |
-| P7 | Performance, QA | ✅ |
-
 ---
 
 ## Architecture
