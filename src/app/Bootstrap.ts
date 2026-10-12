@@ -13,6 +13,8 @@ const MAX_RESOLUTION = 2;
 const CLEAR_COLOR = 0x000000;
 /** Longest frame step; after a tab switch the game resumes instead of jumping ahead. */
 const MAX_DELTA_SECONDS = 0.1;
+/** How long a round lasts; the end card appears when the timer bar is empty. */
+const DEFAULT_ROUND_SECONDS = 30;
 
 /** Composition root: the only place that creates and wires the playable's objects. */
 export async function startPlayable(host: HTMLElement): Promise<Application> {
@@ -31,7 +33,7 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   const textures = await loadAssets(ASSET_MANIFEST);
   let layout = computeViewportLayout(app.screen.width, app.screen.height);
   const pointer = new PointerInput(app.canvas, (x, y) => screenToWorld(layout, x, y));
-  const playable = new Playable(textures, randomFromUrl(), pointer, layout, ads);
+  const playable = new Playable(textures, randomFromUrl(), pointer, layout, ads, roundSecondsFromUrl());
   app.stage.addChild(playable.scene);
   app.renderer.on('resize', () => {
     layout = computeViewportLayout(app.screen.width, app.screen.height);
@@ -49,6 +51,13 @@ function randomFromUrl(): IRandom {
   const seed = Number.parseInt(new URLSearchParams(window.location.search).get('seed') ?? '', 10);
 
   return Number.isFinite(seed) ? new SeededRandom(seed) : new MathRandom();
+}
+
+/** `?time=N` shortens or lengthens the round (tests, bug reports); anything but a positive number is ignored. */
+function roundSecondsFromUrl(): number {
+  const seconds = Number.parseFloat(new URLSearchParams(window.location.search).get('time') ?? '');
+
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : DEFAULT_ROUND_SECONDS;
 }
 
 /** Lets the PixiJS DevTools browser extension inspect the scene; dev builds only. */
