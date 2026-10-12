@@ -1,0 +1,3 @@
+[submodule "assets-src"]
+	path = assets-src
+	url = https://github.com/sburdenko/bub-playables-assets.git
