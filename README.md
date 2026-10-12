@@ -370,3 +370,5 @@ npm run dev
 ## License
 
 All rights reserved. The repository is public for viewing only: the code may not be used, copied, modified or distributed. See [LICENSE](LICENSE).
+
+Third-party content in the private art repository keeps its own licenses. The play button label uses **Lilita One** (Juan Montoreano, SIL Open Font License 1.1).

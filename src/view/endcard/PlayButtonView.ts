@@ -15,7 +15,7 @@ const LOOK = {
   glossInsetOfHeight: 0.08,
   glossOfHeight: 0.4,
 };
-const LABEL = { text: 'PLAY NOW', fontFamily: 'Comic Roasting', fontPixels: 100, heightOfButton: 0.5, outline: 0x1a5c22 };
+const LABEL = { text: 'PLAY NOW', fontFamily: 'Lilita One', fontPixels: 100, heightOfButton: 0.5, outline: 0x1a5c22 };
 
 type Box = { readonly x: number; readonly y: number; readonly width: number; readonly height: number };
 
