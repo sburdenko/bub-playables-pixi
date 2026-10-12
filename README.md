@@ -251,7 +251,7 @@ Each network gets its own single-file build. The Vite mode names the network, an
 
 `npm run build:networks` builds all of them. Store links for MRAID and web builds come from `VITE_STORE_URL_IOS` and `VITE_STORE_URL_ANDROID` (see `.env.example`).
 
-The playable is a timed round of 30 seconds (`DEFAULT_ROUND_SECONDS` in `app/Bootstrap.ts`, `?time=N` overrides it). The bar at the top drains as time passes. When it is empty the turn finishes the shot or attack in progress, the end card dims the game and any tap calls `openStore()`. The store is only ever opened from a user gesture, as networks require.
+The playable is a timed round of 30 seconds (`DEFAULT_ROUND_SECONDS` in `app/Bootstrap.ts`, `?time=N` overrides it). The bar at the top drains as time passes: green for the first half of the round, then it fades to orange and later to red, each fade over two seconds (`domain/time/TimerTint`). When it is empty the turn finishes the shot or attack in progress, the end card dims the game and any tap calls `openStore()`. The store is only ever opened from a user gesture, as networks require.
 
 ---
 
