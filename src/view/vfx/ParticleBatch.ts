@@ -1,5 +1,6 @@
-import { Container, Sprite } from 'pixi.js';
+import { Container, type Sprite } from 'pixi.js';
 import type { Vec2 } from '../../core/math/Vec2';
+import type { ObjectPool } from '../../core/pool/ObjectPool';
 import type { IRandom } from '../../core/random/IRandom';
 import { emitBurst, particleLook, stepParticle, type EmitterConfig, type Particle } from '../../domain/vfx/Particles';
 import type { ITextureSource } from '../assets/ITextureSource';
@@ -10,17 +11,19 @@ export class ParticleBatch extends Container {
   private readonly _config: EmitterConfig;
   private readonly _effectScale: number;
   private readonly _originOf: () => Vec2;
+  private readonly _sprites: ObjectPool<Sprite>;
   private _particles: readonly { readonly particle: Particle; readonly sprite: Sprite }[] = [];
   private _isHeld: boolean;
 
   /** `isHeld` keeps an emitter alive between bursts (a trail) until `release` is called. */
-  constructor(textures: ITextureSource, config: EmitterConfig, effectScale: number, origin: () => Vec2, isHeld = false) {
+  constructor(textures: ITextureSource, config: EmitterConfig, effectScale: number, origin: () => Vec2, sprites: ObjectPool<Sprite>, isHeld = false) {
     super();
     this._isHeld = isHeld;
     this._textures = textures;
     this._config = config;
     this._effectScale = effectScale;
     this._originOf = origin;
+    this._sprites = sprites;
     this.zIndex = config.sortOrder;
   }
 
@@ -42,7 +45,7 @@ export class ParticleBatch extends Container {
     this._particles = this._particles.flatMap(({ particle, sprite }) => {
       const next = stepParticle(particle, this._config, deltaSeconds, this._effectScale);
       if (next === null) {
-        sprite.destroy();
+        this._sprites.release(sprite);
 
         return [];
       }
@@ -53,8 +56,9 @@ export class ParticleBatch extends Container {
   }
 
   private createSprite(): Sprite {
-    const sprite = new Sprite(this._textures.get(this._config.textures[0] ?? ''));
-    sprite.anchor.set(0.5);
+    const sprite = this._sprites.acquire();
+    sprite.texture = this._textures.get(this._config.textures[0] ?? '');
+    sprite.visible = true;
     sprite.tint = this._config.tint;
     sprite.blendMode = this._config.isAdditive ? 'add' : 'normal';
     this.addChild(sprite);

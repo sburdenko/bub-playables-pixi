@@ -1,11 +1,14 @@
+import { Sprite, type Container } from 'pixi.js';
 import { distance, type Vec2 } from '../../core/math/Vec2';
+import { KeyedPool } from '../../core/pool/KeyedPool';
+import { ObjectPool } from '../../core/pool/ObjectPool';
 import type { IRandom } from '../../core/random/IRandom';
 import { emitAlongPath, type EmitterConfig } from '../../domain/vfx/Particles';
 import type { BurstKind, IEffects, TextKind } from '../../game/ports/IAttackViews';
 import type { ITextureSource } from '../assets/ITextureSource';
 import type { WorldLayers } from '../scene/WorldLayers';
 import { ENEMY_IMPACT, ENERGY_BURST, MATCH_GLOW, TRAIL_RATE_PER_UNIT, TRAIL_SCALE, TRAIL_TWINKLE, TRAILING_IMPACT } from './effectConfigs';
-import { FloatingText } from './FloatingText';
+import { FloatingText, textKey } from './FloatingText';
 import { ParticleBatch } from './ParticleBatch';
 
 const BURSTS: Readonly<Record<BurstKind, readonly EmitterConfig[]>> = {
@@ -25,8 +28,10 @@ export class EffectsLayer implements IEffects {
   private readonly _textures: ITextureSource;
   private readonly _layers: WorldLayers;
   private readonly _random: IRandom;
+  private readonly _sprites = new ObjectPool<Sprite>(createParticleSprite, hide);
+  private readonly _textPool = new KeyedPool<string, FloatingText>(createFloatingText, hide);
   private _batches: readonly ParticleBatch[] = [];
-  private _texts: readonly FloatingText[] = [];
+  private _texts: readonly { readonly key: string; readonly text: FloatingText }[] = [];
 
   constructor(textures: ITextureSource, layers: WorldLayers, random: IRandom) {
     this._textures = textures;
@@ -39,9 +44,11 @@ export class EffectsLayer implements IEffects {
   }
 
   spawnText(kind: TextKind, position: Vec2, value: number, layoutScale: number): void {
-    const text = new FloatingText(kind, position, value, layoutScale);
+    const key = textKey(kind, value);
+    const text = this._textPool.acquire(key);
+    text.restart(position, layoutScale);
     this._layers.foreground.addChild(text);
-    this._texts = [...this._texts, text];
+    this._texts = [...this._texts, { key, text }];
   }
 
   spawnMatchGlow(position: Vec2, layoutScale: number): void {
@@ -74,9 +81,10 @@ export class EffectsLayer implements IEffects {
 
   update(deltaSeconds: number): void {
     this._batches.forEach((batch) => batch.update(deltaSeconds));
-    this._texts.forEach((text) => text.update(deltaSeconds));
+    this._texts.forEach(({ text }) => text.update(deltaSeconds));
     this._batches = this.prune(this._batches, (batch) => batch.isFinished);
-    this._texts = this.prune(this._texts, (text) => text.isFinished);
+    this._texts.filter(({ text }) => text.isFinished).forEach(({ key, text }) => this._textPool.release(key, text));
+    this._texts = this._texts.filter(({ text }) => !text.isFinished);
   }
 
   private burst(configs: readonly EmitterConfig[], position: Vec2, effectScale: number): void {
@@ -84,7 +92,7 @@ export class EffectsLayer implements IEffects {
   }
 
   private addBatch(config: EmitterConfig, effectScale: number, origin: () => Vec2, isHeld = false): ParticleBatch {
-    const batch = new ParticleBatch(this._textures, config, effectScale, origin, isHeld);
+    const batch = new ParticleBatch(this._textures, config, effectScale, origin, this._sprites, isHeld);
     this._layers.gameplay.addChild(batch);
     this._batches = [...this._batches, batch];
 
@@ -102,4 +110,22 @@ export class EffectsLayer implements IEffects {
       return true;
     });
   }
+}
+
+function createParticleSprite(): Sprite {
+  const sprite = new Sprite();
+  sprite.anchor.set(0.5);
+
+  return sprite;
+}
+
+function createFloatingText(key: string): FloatingText {
+  const [kind, value] = key.split(':');
+
+  return new FloatingText(kind as TextKind, Number(value));
+}
+
+function hide(item: Container): void {
+  item.removeFromParent();
+  item.visible = false;
 }

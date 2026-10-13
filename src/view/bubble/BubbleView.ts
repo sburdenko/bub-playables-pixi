@@ -132,17 +132,43 @@ export class BubbleView implements IBubbleView {
     this.sync();
   }
 
+  /** The bubble is done: it leaves the scene and the layer takes it back for reuse. */
   destroy(): void {
     this._isDestroyed = true;
     this.stopTrail();
-    [this._shadow, this._body, this._flash].forEach((part) => part.destroy({ children: true }));
+    this.parts.forEach((part) => {
+      part.removeFromParent();
+      part.visible = false;
+    });
+  }
+
+  /** Back to a fresh, idle bubble; called by the layer's pool when it takes the view back. */
+  reset(): void {
+    this._isDestroyed = false;
+    this._layoutScale = 1;
+    this._placement = { kind: 'free', position: ZERO };
+    this._clip = { kind: 'none' };
+    this._rotation = 0;
+    this._shrink = 1;
+    this._trail = null;
+  }
+
+  /** Puts a reset bubble back in the scene so it can be used as a new one. */
+  activate(): void {
+    this.parts.forEach((part) => (part.visible = true));
+    this.setSorting(0, 'gameplay');
+    this.sync();
+  }
+
+  private get parts(): readonly WorldSprite[] {
+    return [this._shadow, this._body, this._flash];
   }
 
   private setSorting(row: number, layer: 'gameplay' | 'foreground'): void {
     this._shadow.zIndex = SHADOW.order + row * ROW_SORTING_STRIDE;
     this._body.zIndex = BODY.order + row * ROW_SORTING_STRIDE;
     this._flash.zIndex = BODY.order + row * ROW_SORTING_STRIDE;
-    for (const part of [this._shadow, this._body, this._flash]) {
+    for (const part of this.parts) {
       if (part.parent !== this._layers[layer]) {
         this._layers[layer].addChild(part);
       }
