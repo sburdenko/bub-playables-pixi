@@ -27,14 +27,19 @@ const STYLES: Readonly<Record<TextKind, FloatingTextStyle>> = {
   damage: { prefix: '-', height: 0.8, outlineColor: 0x000000, outlineOffset: 0.06, lifetime: 1, rise: 0.6, startScale: 1.05, endScale: 0.92, startColor: 0xff2800, endColor: 0xbf2e24 },
 };
 
-/** An outlined number that rises, shrinks and fades out. */
+/** Pool key: texts of the same kind and value look identical, so one can stand in for another. */
+export function textKey(kind: TextKind, value: number): string {
+  return `${kind}:${value}`;
+}
+
+/** An outlined number that rises, shrinks and fades out. Pooled: `restart` plays it again from the start. */
 export class FloatingText extends Text {
   private readonly _look: FloatingTextStyle;
-  private readonly _start: Vec2;
-  private readonly _layoutScale: number;
+  private _start: Vec2 = { x: 0, y: 0 };
+  private _layoutScale = 1;
   private _age = 0;
 
-  constructor(kind: TextKind, position: Vec2, value: number, layoutScale: number) {
+  constructor(kind: TextKind, value: number) {
     const style = STYLES[kind];
     const pixelsPerUnit = FONT_PIXELS / style.height;
     super({
@@ -44,9 +49,15 @@ export class FloatingText extends Text {
       resolution: 2,
     });
     this._look = style;
+    this.zIndex = SORT_ORDER;
+  }
+
+  /** Plays the number again from `position`, as if it had just been created. */
+  restart(position: Vec2, layoutScale: number): void {
     this._start = position;
     this._layoutScale = layoutScale;
-    this.zIndex = SORT_ORDER;
+    this._age = 0;
+    this.visible = true;
     this.apply(0);
   }
 
