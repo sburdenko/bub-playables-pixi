@@ -1,14 +1,13 @@
 import type { Vec2 } from '../../core/math/Vec2';
 import type { IOrbView } from '../../game/ports/IAttackViews';
 import type { ITextureSource } from '../assets/ITextureSource';
-import { sortOrder } from '../scene/sortOrder';
 import { WorldSprite } from '../scene/WorldSprite';
 
-/** The attack orb: hidden until a match, drawn above everything. */
+/** The attack orb: hidden until a match; it joins the foreground layer. */
 export class OrbView extends WorldSprite implements IOrbView {
   constructor(textures: ITextureSource) {
     super(textures, 't-vfx-attackflow-01-y');
-    this.zIndex = sortOrder(0, 'top');
+    this.zIndex = 0;
     this.visible = false;
   }
 

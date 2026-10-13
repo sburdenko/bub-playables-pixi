@@ -5,11 +5,15 @@ import type { LauncherSystem } from '../game/launcher/LauncherSystem';
 import type { IUpdatable } from '../game/ports/IUpdatable';
 import type { IAdNetwork } from '../platform/ads/IAdNetwork';
 import type { EndCardView } from '../view/endcard/EndCardView';
+import type { TopBarView } from '../view/layout/TopBarView';
 import type { SceneView } from '../view/scene/SceneView';
+import type { UiStage } from '../view/ui/UiStage';
 
 /** Everything the running game needs, already created and wired by `assemblePlayable`. */
 export type PlayableParts = {
   readonly scene: SceneView;
+  readonly ui: UiStage;
+  readonly topBar: TopBarView;
   readonly board: BoardSystem;
   readonly launcher: LauncherSystem;
   readonly endCard: EndCardView;
@@ -27,13 +31,20 @@ export class Playable {
     this._parts = parts;
   }
 
+  /** The world; add it to the stage first. */
   get scene(): SceneView {
     return this._parts.scene;
   }
 
+  /** The screen-space interface; add it to the stage after the scene. */
+  get ui(): UiStage {
+    return this._parts.ui;
+  }
+
   applyLayout(layout: ViewportLayout): void {
-    const { scene, board, launcher, endCard } = this._parts;
+    const { scene, topBar, board, launcher, endCard } = this._parts;
     scene.applyLayout(layout);
+    topBar.applyLayout(layout);
     board.applyLayout(layout.designRect);
     launcher.applyLayout(layout.visibleRect, board.layoutScale);
     endCard.applyLayout(layout);

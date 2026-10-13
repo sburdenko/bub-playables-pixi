@@ -2,7 +2,6 @@ import { Color, Text } from 'pixi.js';
 import { clamp01, lerp } from '../../core/math/Scalar';
 import type { Vec2 } from '../../core/math/Vec2';
 import type { TextKind } from '../../game/ports/IAttackViews';
-import { sortOrder } from '../scene/sortOrder';
 
 const FONT_FAMILY = 'Comic Roasting';
 const FONT_PIXELS = 100;
@@ -47,7 +46,7 @@ export class FloatingText extends Text {
     this._look = style;
     this._start = position;
     this._layoutScale = layoutScale;
-    this.zIndex = sortOrder(SORT_ORDER, 'top');
+    this.zIndex = SORT_ORDER;
     this.apply(0);
   }
 

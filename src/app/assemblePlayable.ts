@@ -14,8 +14,10 @@ import type { ITextureSource } from '../view/assets/ITextureSource';
 import { OrbView } from '../view/attack/OrbView';
 import { BubbleLayer } from '../view/bubble/BubbleLayer';
 import { EndCardView } from '../view/endcard/EndCardView';
+import { TopBarView } from '../view/layout/TopBarView';
 import { SlingView } from '../view/launcher/SlingView';
 import { SceneView } from '../view/scene/SceneView';
+import { UiStage } from '../view/ui/UiStage';
 import { EffectsLayer } from '../view/vfx/EffectsLayer';
 import { Playable } from './Playable';
 
@@ -29,21 +31,28 @@ export function assemblePlayable(
   config: GameConfig,
 ): Playable {
   const scene = new SceneView(textures, random);
-  const effects = new EffectsLayer(textures, scene.world, random);
-  const bubbles = new BubbleLayer(textures, scene.world, effects);
+  const effects = new EffectsLayer(textures, scene.layers, random);
+  const bubbles = new BubbleLayer(textures, scene.layers, effects);
   const sling = new SlingView(textures);
   const orb = new OrbView(textures);
+  const topBar = new TopBarView(textures);
   const endCard = new EndCardView(textures, () => ads.openStore());
-  scene.world.addChild(...sling.parts, orb, endCard);
+  const ui = new UiStage();
+  ui.hud.addChild(topBar);
+  ui.overlay.addChild(endCard);
+  scene.layers.gameplay.addChild(...sling.parts);
+  scene.layers.foreground.addChild(orb);
 
   const board = new BoardSystem(parseLevel(OPENING_LEVEL_ROWS), bubbles, layout.designRect, config.board);
   const launcher = new LauncherSystem(sling, config.launcher);
   const attack = new MatchAttackSequence(orb, scene.bottom.enemy, effects, config.attack);
-  const timer = new RoundTimer(config.round.durationSeconds, scene.timer, config.timerTint);
+  const timer = new RoundTimer(config.round.durationSeconds, topBar, config.timerTint);
   const turn = new TurnFlow(board, launcher, attack, pointer, random, timer, config.round.endDelaySeconds);
 
   const playable = new Playable({
     scene,
+    ui,
+    topBar,
     board,
     launcher,
     endCard,

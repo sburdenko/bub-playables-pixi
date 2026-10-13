@@ -5,7 +5,6 @@ import type { BubbleColor } from '../../domain/board/BubbleColor';
 import type { ISlingView } from '../../game/ports/ISlingView';
 import type { ITextureSource } from '../assets/ITextureSource';
 import { AIM_COLORS } from '../bubble/bubbleClips';
-import { sortOrder } from '../scene/sortOrder';
 import { WorldSprite } from '../scene/WorldSprite';
 import { TaperedLine, TexturedLine } from './StretchedLine';
 
@@ -111,6 +110,6 @@ export class SlingView implements ISlingView {
   }
 
   private order(...entries: readonly (readonly [Container, number])[]): void {
-    entries.forEach(([part, order]) => (part.zIndex = sortOrder(order)));
+    entries.forEach(([part, order]) => (part.zIndex = order));
   }
 }

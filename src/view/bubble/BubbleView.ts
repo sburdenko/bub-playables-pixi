@@ -1,11 +1,10 @@
-import type { Container } from 'pixi.js';
 import { add, rotate, scale, vec2, ZERO, type Vec2 } from '../../core/math/Vec2';
 import { evaluateCurve } from '../../domain/animation/Keyframes';
 import type { BubbleColor } from '../../domain/board/BubbleColor';
 import { applyImpulse, SPRING_AT_REST, stepSpring, type SpringState } from '../../domain/physics/SpringMotion';
 import type { IBubbleView } from '../../game/ports/IBubbleView';
 import type { ITextureSource } from '../assets/ITextureSource';
-import { sortOrder } from '../scene/sortOrder';
+import type { WorldLayers } from '../scene/WorldLayers';
 import { WorldSprite } from '../scene/WorldSprite';
 import type { EffectsLayer, ITrail } from '../vfx/EffectsLayer';
 import { MATCH_CLIP, SPAWN_CLIP, SPIN_CLIP } from './bubbleClips';
@@ -33,6 +32,7 @@ type Pose = { readonly anchor: Vec2; readonly shadowAlpha: number; readonly flas
 export class BubbleView implements IBubbleView {
   readonly color: BubbleColor;
   private readonly _effects: EffectsLayer;
+  private readonly _layers: WorldLayers;
   private readonly _shadow: WorldSprite;
   private readonly _body: WorldSprite;
   private readonly _flash: WorldSprite;
@@ -44,15 +44,15 @@ export class BubbleView implements IBubbleView {
   private _trail: ITrail | null = null;
   private _isDestroyed = false;
 
-  constructor(textures: ITextureSource, color: BubbleColor, world: Container, effects: EffectsLayer) {
+  constructor(textures: ITextureSource, color: BubbleColor, layers: WorldLayers, effects: EffectsLayer) {
     this.color = color;
     this._effects = effects;
+    this._layers = layers;
     this._shadow = new WorldSprite(textures, 't-normal-shadow');
     this._body = new WorldSprite(textures, `t-normal-${color}`);
     this._flash = new WorldSprite(textures, `t-normal-${color}`);
     this._flash.blendMode = 'add';
-    this.setSorting(0, 'default');
-    world.addChild(this._shadow, this._body, this._flash);
+    this.setSorting(0, 'gameplay');
   }
 
   get position(): Vec2 {
@@ -80,7 +80,7 @@ export class BubbleView implements IBubbleView {
   }
 
   place(rest: Vec2, row: number): void {
-    this.setSorting(row, 'default');
+    this.setSorting(row, 'gameplay');
     this._clip = { kind: 'spawn', time: 0 };
     this.stopTrail();
     this.setRestPosition(rest);
@@ -105,7 +105,7 @@ export class BubbleView implements IBubbleView {
 
   beginCollect(): void {
     this._placement = { kind: 'free', position: this.position };
-    this.setSorting(0, 'top');
+    this.setSorting(0, 'foreground');
     this._trail = this._effects.createTrail();
   }
 
@@ -138,10 +138,15 @@ export class BubbleView implements IBubbleView {
     [this._shadow, this._body, this._flash].forEach((part) => part.destroy({ children: true }));
   }
 
-  private setSorting(row: number, layer: 'default' | 'top'): void {
-    this._shadow.zIndex = sortOrder(SHADOW.order + row * ROW_SORTING_STRIDE, layer);
-    this._body.zIndex = sortOrder(BODY.order + row * ROW_SORTING_STRIDE, layer);
-    this._flash.zIndex = sortOrder(BODY.order + row * ROW_SORTING_STRIDE, layer);
+  private setSorting(row: number, layer: 'gameplay' | 'foreground'): void {
+    this._shadow.zIndex = SHADOW.order + row * ROW_SORTING_STRIDE;
+    this._body.zIndex = BODY.order + row * ROW_SORTING_STRIDE;
+    this._flash.zIndex = BODY.order + row * ROW_SORTING_STRIDE;
+    for (const part of [this._shadow, this._body, this._flash]) {
+      if (part.parent !== this._layers[layer]) {
+        this._layers[layer].addChild(part);
+      }
+    }
   }
 
   private stopTrail(): void {

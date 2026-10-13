@@ -1,25 +1,25 @@
-import type { Container } from 'pixi.js';
 import type { BubbleColor } from '../../domain/board/BubbleColor';
 import type { IBubbleViewFactory } from '../../game/ports/IBubbleView';
 import type { ITextureSource } from '../assets/ITextureSource';
+import type { WorldLayers } from '../scene/WorldLayers';
 import type { EffectsLayer } from '../vfx/EffectsLayer';
 import { BubbleView } from './BubbleView';
 
-/** Creates bubble views in the world and advances their animations every frame. */
+/** Creates bubble views in the world layers and advances their animations every frame. */
 export class BubbleLayer implements IBubbleViewFactory {
   private readonly _textures: ITextureSource;
-  private readonly _world: Container;
+  private readonly _layers: WorldLayers;
   private readonly _effects: EffectsLayer;
   private _views: readonly BubbleView[] = [];
 
-  constructor(textures: ITextureSource, world: Container, effects: EffectsLayer) {
+  constructor(textures: ITextureSource, layers: WorldLayers, effects: EffectsLayer) {
     this._textures = textures;
-    this._world = world;
+    this._layers = layers;
     this._effects = effects;
   }
 
   create(color: BubbleColor): BubbleView {
-    const view = new BubbleView(this._textures, color, this._world, this._effects);
+    const view = new BubbleView(this._textures, color, this._layers, this._effects);
     this._views = [...this._views, view];
 
     return view;

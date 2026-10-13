@@ -3,7 +3,6 @@ import type { Vec2 } from '../../core/math/Vec2';
 import type { IRandom } from '../../core/random/IRandom';
 import { emitBurst, particleLook, stepParticle, type EmitterConfig, type Particle } from '../../domain/vfx/Particles';
 import type { ITextureSource } from '../assets/ITextureSource';
-import { sortOrder } from '../scene/sortOrder';
 
 /** Draws one emitter's particles in the world. Particles positions are relative to `origin()` (local simulation). */
 export class ParticleBatch extends Container {
@@ -22,7 +21,7 @@ export class ParticleBatch extends Container {
     this._config = config;
     this._effectScale = effectScale;
     this._originOf = origin;
-    this.zIndex = sortOrder(config.sortOrder);
+    this.zIndex = config.sortOrder;
   }
 
   get isFinished(): boolean {

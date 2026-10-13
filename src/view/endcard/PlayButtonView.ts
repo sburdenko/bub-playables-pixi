@@ -1,5 +1,4 @@
 import { Container, NineSliceSprite, Text } from 'pixi.js';
-import { centerX, centerY, type Rect } from '../../core/math/Rect';
 import type { ITextureSource } from '../assets/ITextureSource';
 
 const BODY_TEXTURE = 'turntimer-frame-mask';
@@ -31,12 +30,12 @@ export class PlayButtonView extends Container {
     this._textures = textures;
   }
 
-  applyLayout(designRect: Rect): void {
-    const width = designRect.width * SIZE.widthOfDesign;
+  /** Sizes the button from the width of the design area, in the world units of its parent. */
+  applyLayout(designWidth: number): void {
+    const width = designWidth * SIZE.widthOfDesign;
     const height = width * SIZE.aspect;
     this.removeChildren().forEach((child) => child.destroy());
     this.addChild(this.createSurface(width, height), this.createLabel(height));
-    this.position.set(centerX(designRect), centerY(designRect));
   }
 
   /** Pulses once per period; `seconds` is the time since the button appeared. */
