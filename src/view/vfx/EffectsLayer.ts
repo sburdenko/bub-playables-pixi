@@ -1,9 +1,9 @@
-import type { Container } from 'pixi.js';
 import { distance, type Vec2 } from '../../core/math/Vec2';
 import type { IRandom } from '../../core/random/IRandom';
 import { emitAlongPath, type EmitterConfig } from '../../domain/vfx/Particles';
 import type { BurstKind, IEffects, TextKind } from '../../game/ports/IAttackViews';
 import type { ITextureSource } from '../assets/ITextureSource';
+import type { WorldLayers } from '../scene/WorldLayers';
 import { ENEMY_IMPACT, ENERGY_BURST, MATCH_GLOW, TRAIL_RATE_PER_UNIT, TRAIL_SCALE, TRAIL_TWINKLE, TRAILING_IMPACT } from './effectConfigs';
 import { FloatingText } from './FloatingText';
 import { ParticleBatch } from './ParticleBatch';
@@ -23,14 +23,14 @@ export interface ITrail {
 /** One-shot particle bursts, floating numbers and bubble trails, all advanced every frame. */
 export class EffectsLayer implements IEffects {
   private readonly _textures: ITextureSource;
-  private readonly _world: Container;
+  private readonly _layers: WorldLayers;
   private readonly _random: IRandom;
   private _batches: readonly ParticleBatch[] = [];
   private _texts: readonly FloatingText[] = [];
 
-  constructor(textures: ITextureSource, world: Container, random: IRandom) {
+  constructor(textures: ITextureSource, layers: WorldLayers, random: IRandom) {
     this._textures = textures;
-    this._world = world;
+    this._layers = layers;
     this._random = random;
   }
 
@@ -40,7 +40,7 @@ export class EffectsLayer implements IEffects {
 
   spawnText(kind: TextKind, position: Vec2, value: number, layoutScale: number): void {
     const text = new FloatingText(kind, position, value, layoutScale);
-    this._world.addChild(text);
+    this._layers.foreground.addChild(text);
     this._texts = [...this._texts, text];
   }
 
@@ -85,7 +85,7 @@ export class EffectsLayer implements IEffects {
 
   private addBatch(config: EmitterConfig, effectScale: number, origin: () => Vec2, isHeld = false): ParticleBatch {
     const batch = new ParticleBatch(this._textures, config, effectScale, origin, isHeld);
-    this._world.addChild(batch);
+    this._layers.gameplay.addChild(batch);
     this._batches = [...this._batches, batch];
 
     return batch;

@@ -5,7 +5,6 @@ import type { ViewportLayout } from '../../domain/layout/ViewportLayout';
 import type { ITextureSource } from '../assets/ITextureSource';
 import { CharacterView } from '../characters/CharacterView';
 import { ENEMY, HERO } from '../characters/characters';
-import { sortOrder } from '../scene/sortOrder';
 import { WorldSprite } from '../scene/WorldSprite';
 
 const PANEL_SORT_ORDER = -1;
@@ -25,9 +24,9 @@ export class BottomView {
     this._panel = new WorldSprite(textures, 'gameplaybottomblue');
     this.hero = new CharacterView(textures, HERO, random);
     this.enemy = new CharacterView(textures, ENEMY, random);
-    this._panel.zIndex = sortOrder(PANEL_SORT_ORDER);
-    this.hero.zIndex = sortOrder(CHARACTER_SORT_ORDER);
-    this.enemy.zIndex = sortOrder(CHARACTER_SORT_ORDER);
+    this._panel.zIndex = PANEL_SORT_ORDER;
+    this.hero.zIndex = CHARACTER_SORT_ORDER;
+    this.enemy.zIndex = CHARACTER_SORT_ORDER;
   }
 
   /** The panel and characters join the world directly so they sort against everything else. */

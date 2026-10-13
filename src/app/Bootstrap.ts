@@ -33,7 +33,7 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   let layout = computeViewportLayout(app.screen.width, app.screen.height);
   const pointer = new PointerInput(app.canvas, (x, y) => screenToWorld(layout, x, y));
   const playable = assemblePlayable(textures, randomFromUrl(), pointer, layout, ads, configFromUrl());
-  app.stage.addChild(playable.scene);
+  app.stage.addChild(playable.scene, playable.ui);
   app.renderer.on('resize', () => {
     layout = computeViewportLayout(app.screen.width, app.screen.height);
     playable.applyLayout(layout);

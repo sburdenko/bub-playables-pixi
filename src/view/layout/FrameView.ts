@@ -2,7 +2,6 @@ import { Container } from 'pixi.js';
 import { centerX, centerY, xMax, yMax } from '../../core/math/Rect';
 import type { ViewportLayout } from '../../domain/layout/ViewportLayout';
 import type { ITextureSource } from '../assets/ITextureSource';
-import { sortOrder } from '../scene/sortOrder';
 import { WorldSprite } from '../scene/WorldSprite';
 
 const SORT_ORDER = 100;
@@ -21,7 +20,7 @@ export class FrameView extends Container {
     this._left = new WorldSprite(textures, 'gameplayframeside');
     this._right = new WorldSprite(textures, 'gameplayframeside');
     this._top = new WorldSprite(textures, 'gameplayframetop');
-    this.zIndex = sortOrder(SORT_ORDER);
+    this.zIndex = SORT_ORDER;
     this.addChild(this._left, this._right, this._top);
   }
 

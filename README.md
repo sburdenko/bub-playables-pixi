@@ -123,6 +123,15 @@ sequenceDiagram
 
 The whole world is drawn inside one container, `WorldStage`, whose transform is the camera: children live in **world units with Y up**, and the container maps them to screen pixels. Positions and sizes carry over from the original design without conversion.
 
+Layers are real containers, not numbers. The world has three, back to front: `background`, `gameplay` (scenery, characters, bubbles, sling, most particles; sorted inside by `zIndex`) and `foreground` (collected bubbles, the attack orb, floating numbers). The interface lives outside the camera in a separate screen-space root, `UiStage`, with a `hud` (the timer bar) and an `overlay` (the end card), so a camera change can never move the UI.
+
+```mermaid
+flowchart TB
+    stage["app.stage"] --> scene["SceneView (camera)"] & ui["UiStage (screen pixels)"]
+    scene --> bg["background"] --> gp["gameplay"] --> fg["foreground"]
+    ui --> hud["hud: timer bar"] --> ov["overlay: end card"]
+```
+
 `computeViewportLayout` (a pure function in `domain/layout`) works out what is visible for a screen size:
 
 | Screen | What happens |

@@ -1,12 +1,9 @@
 import { Container, NineSliceSprite, Sprite, type Texture } from 'pixi.js';
-import { centerX, yMax } from '../../core/math/Rect';
 import { clamp01 } from '../../core/math/Scalar';
 import type { ViewportLayout } from '../../domain/layout/ViewportLayout';
 import type { ITimerView, TimerLook } from '../../game/ports/ITimerView';
 import type { ITextureSource } from '../assets/ITextureSource';
-import { sortOrder } from '../scene/sortOrder';
 
-const SORT_ORDER = 300;
 const CANVAS_REFERENCE_HEIGHT = 2436;
 const CANVAS_PIXELS_PER_UNIT = 100;
 const BAR_OFFSET_FROM_TOP = 83.4;
@@ -32,7 +29,7 @@ type BuiltImage = { readonly holder: Container; readonly graphic: Container; rea
 
 /**
  * The top bar from the Unity canvas (screen-space, 1125x2436 reference, matched by height): a timer fill in a frame with
- * an icon. Children are laid out in canvas pixels; the bar scales canvas pixels to world units. The fill is a
+ * an icon. Children are laid out in canvas pixels; the bar scales canvas pixels to screen pixels. The fill is a
  * nine-slice, so it drains by getting narrower and keeps its rounded end; once it is narrower than its two rounded
  * ends it is squeezed as a whole until it disappears.
  */
@@ -43,7 +40,6 @@ export class TopBarView extends Container implements ITimerView {
 
   constructor(textures: ITextureSource) {
     super();
-    this.zIndex = sortOrder(SORT_ORDER);
     const fill = createImage(textures, FILL_IMAGE);
     if (!(fill.graphic instanceof NineSliceSprite)) {
       throw new Error('The timer fill must be a nine-slice sprite.');
@@ -63,10 +59,12 @@ export class TopBarView extends Container implements ITimerView {
     this._fill.tint = tint;
   }
 
-  applyLayout({ visibleRect }: ViewportLayout): void {
-    const unitsPerCanvasPixel = visibleRect.height / CANVAS_REFERENCE_HEIGHT;
-    this.position.set(centerX(visibleRect), yMax(visibleRect) - BAR_OFFSET_FROM_TOP * unitsPerCanvasPixel);
-    this.scale.set(BAR_SCALE * unitsPerCanvasPixel);
+  /** Screen space, Y down: the bar hangs from the top edge of the viewport, scaled by the screen height. */
+  applyLayout({ viewport }: ViewportLayout): void {
+    const pixelsPerCanvasPixel = viewport.height / CANVAS_REFERENCE_HEIGHT;
+    this.position.set(viewport.x + viewport.width / 2, viewport.y + BAR_OFFSET_FROM_TOP * pixelsPerCanvasPixel);
+    // The canvas images are laid out Y up; flipping here keeps them upright in screen space.
+    this.scale.set(BAR_SCALE * pixelsPerCanvasPixel, -BAR_SCALE * pixelsPerCanvasPixel);
   }
 }
 
