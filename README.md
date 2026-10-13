@@ -173,6 +173,10 @@ flowchart LR
     ended -->|yes, once| card["show end card<br/>ads.notifyEnded()"]
 ```
 
+### Tuning the rules
+
+Every number a designer is likely to change lives in one place, [`GameConfig`](src/domain/config/GameConfig.ts): round length and end pause, match size, projectile acceleration, sling pull and launch speed, score per bubble, and when the timer bar turns orange and red. `app/Bootstrap` builds the config, `app/assemblePlayable` hands each system its own section through the constructor, and the pure layers never reach for a global. `?time=N` overrides the round length.
+
 ### Effects
 
 Particle effects are data, not code. Each one is an `EmitterConfig` ported from the original particle systems (burst count, lifetime, speed with a dampened speed limit, size and alpha over lifetime, additive or normal blending). `domain/vfx/Particles` simulates them as pure functions; `view/vfx` only draws them.

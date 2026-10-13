@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { mixColor } from '../../../src/core/math/Color';
 import { advanceCountdown, createCountdown } from '../../../src/domain/time/Countdown';
 import { TIMER_GREEN, TIMER_ORANGE, TIMER_RED, timerTint } from '../../../src/domain/time/TimerTint';
+import { DEFAULT_GAME_CONFIG } from '../../../src/domain/config/GameConfig';
 
 const ROUND_SECONDS = 30;
 
 function tintAt(elapsedSeconds: number, duration = ROUND_SECONDS): number {
-  return timerTint(advanceCountdown(createCountdown(duration), elapsedSeconds));
+  return timerTint(advanceCountdown(createCountdown(duration), elapsedSeconds), DEFAULT_GAME_CONFIG.timerTint);
 }
 
 describe('timerTint', () => {

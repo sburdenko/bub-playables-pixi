@@ -15,6 +15,7 @@ import { isTouching } from '../../../src/domain/physics/ContactRule';
 import { stepProjectile } from '../../../src/domain/physics/ProjectileMotion';
 import { applyImpulse, isAtRest, SPRING_AT_REST, stepSpring, type SpringState } from '../../../src/domain/physics/SpringMotion';
 import { travelDistance } from '../../../src/domain/physics/Travel';
+import { DEFAULT_GAME_CONFIG } from '../../../src/domain/config/GameConfig';
 
 const DESIGN_RECT = rect(-3.79, -7.2, 7.58, 16.4);
 const MAX_DISTANCE = 0.85;
@@ -28,6 +29,9 @@ function boardOf(rows: readonly string[]) {
 
   return { geometry: new BoardGeometry(levelRowWidths(level), DESIGN_RECT), colorAt: (target: GridCell) => colors.get(cellKey(target)) };
 }
+
+const MIN_MATCH = DEFAULT_GAME_CONFIG.board.minMatchSize;
+const ACCELERATION = DEFAULT_GAME_CONFIG.board.projectileAcceleration;
 
 describe('AimMath (ported from Unity)', () => {
   it('pullingUpwards_cancelsAim', () => {
@@ -73,15 +77,15 @@ describe('MatchRule', () => {
   const { geometry, colorAt } = boardOf(['RRRRB', 'RBBB']);
 
   it('fiveConnectedOfOneColorMatch', () => {
-    expect(findMatch(geometry, colorAt, cell(0, 0))).toHaveLength(5);
+    expect(findMatch(geometry, colorAt, cell(0, 0), MIN_MATCH)).toHaveLength(5);
   });
 
   it('fourDoNot', () => {
-    expect(findMatch(geometry, colorAt, cell(0, 4))).toBeNull();
+    expect(findMatch(geometry, colorAt, cell(0, 4), MIN_MATCH)).toBeNull();
   });
 
   it('emptyCellNeverMatches', () => {
-    expect(findMatch(geometry, colorAt, cell(5, 0))).toBeNull();
+    expect(findMatch(geometry, colorAt, cell(5, 0), MIN_MATCH)).toBeNull();
   });
 });
 
@@ -126,7 +130,7 @@ describe('stepProjectile', () => {
   const walls = { leftX: -3, rightX: 3 };
 
   it('movesAndAcceleratesAlongTheFlight', () => {
-    const next = stepProjectile({ position: vec2(0, 0), velocity: vec2(0, 12) }, 0.1, 0.3, walls);
+    const next = stepProjectile({ position: vec2(0, 0), velocity: vec2(0, 12) }, 0.1, 0.3, walls, ACCELERATION);
 
     expect(next.position.x).toBe(0);
     expect(next.position.y).toBeCloseTo(1.2, 10);
@@ -134,8 +138,8 @@ describe('stepProjectile', () => {
   });
 
   it('bouncesOffBothWalls', () => {
-    const left = stepProjectile({ position: vec2(-2.6, 0), velocity: vec2(-10, 5) }, 0.1, 0.3, walls);
-    const right = stepProjectile({ position: vec2(2.6, 0), velocity: vec2(10, 5) }, 0.1, 0.3, walls);
+    const left = stepProjectile({ position: vec2(-2.6, 0), velocity: vec2(-10, 5) }, 0.1, 0.3, walls, ACCELERATION);
+    const right = stepProjectile({ position: vec2(2.6, 0), velocity: vec2(10, 5) }, 0.1, 0.3, walls, ACCELERATION);
 
     expect(left.position.x).toBeCloseTo(-2.7, 10);
     expect(left.velocity.x).toBeGreaterThan(0);

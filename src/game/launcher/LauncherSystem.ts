@@ -1,6 +1,7 @@
 import { centerX, type Rect } from '../../core/math/Rect';
 import { add, distance, length, normalize, scale, subtract, vec2, ZERO, type Vec2 } from '../../core/math/Vec2';
 import { BUBBLE_BASE_RADIUS } from '../../domain/board/BoardGeometry';
+import type { LauncherRules } from '../../domain/config/GameConfig';
 import { clampPull } from '../../domain/launcher/AimMath';
 import type { IBubbleView } from '../ports/IBubbleView';
 import type { PointerSample } from '../ports/IPointerSource';
@@ -8,11 +9,6 @@ import type { ISlingView } from '../ports/ISlingView';
 import type { ITurnLauncher, Shot } from '../ports/ITurnLauncher';
 
 const ANCHOR_HEIGHT_FROM_BOTTOM = 700 / 2436;
-const MAX_PULL_DISTANCE = 0.85;
-const MIN_LAUNCH_PULL = MAX_PULL_DISTANCE * 0.3;
-const MAX_LAUNCH_ANGLE_DEGREES = 40;
-const LAUNCH_SPEED = 12;
-const GRAB_RADIUS_FACTOR = 1.8;
 const MAX_AIM_LINE_LENGTH = 3.15;
 
 type AimingState = { readonly kind: 'aiming'; readonly bubble: IBubbleView; readonly pull: Vec2 };
@@ -22,12 +18,14 @@ type LauncherState = { readonly kind: 'empty' } | { readonly kind: 'ready'; read
 /** The sling: grab the loaded bubble, pull it down within a cone, release to shoot opposite to the pull. */
 export class LauncherSystem implements ITurnLauncher {
   private readonly _sling: ISlingView;
+  private readonly _rules: LauncherRules;
   private _state: LauncherState = { kind: 'empty' };
   private _anchor: Vec2 = ZERO;
   private _layoutScale = 1;
 
-  constructor(sling: ISlingView) {
+  constructor(sling: ISlingView, rules: LauncherRules) {
     this._sling = sling;
+    this._rules = rules;
   }
 
   get isEmpty(): boolean {
@@ -79,13 +77,13 @@ export class LauncherSystem implements ITurnLauncher {
   }
 
   private isGrabbing(pointer: Vec2): boolean {
-    return distance(pointer, this._anchor) <= BUBBLE_BASE_RADIUS * this._layoutScale * GRAB_RADIUS_FACTOR;
+    return distance(pointer, this._anchor) <= BUBBLE_BASE_RADIUS * this._layoutScale * this._rules.grabRadiusFactor;
   }
 
   private aim(bubble: IBubbleView, pointer: Vec2): AimingState {
-    const pull = clampPull(subtract(pointer, this._anchor), MAX_PULL_DISTANCE, MAX_LAUNCH_ANGLE_DEGREES);
+    const pull = clampPull(subtract(pointer, this._anchor), this._rules.maxPullDistance, this._rules.maxLaunchAngleDegrees);
     const pocket = add(this._anchor, pull);
-    const strength = length(pull) / MAX_PULL_DISTANCE;
+    const strength = length(pull) / this._rules.maxPullDistance;
     bubble.setPosition(pocket);
     this._sling.showAim(pocket, scale(normalize(pull), -MAX_AIM_LINE_LENGTH * strength), strength, this._layoutScale);
 
@@ -93,7 +91,7 @@ export class LauncherSystem implements ITurnLauncher {
   }
 
   private release(state: AimingState): Shot | null {
-    if (length(state.pull) < MIN_LAUNCH_PULL) {
+    if (length(state.pull) < this._rules.maxPullDistance * this._rules.minPullShare) {
       this.resetPull(state.bubble);
 
       return null;
@@ -103,7 +101,7 @@ export class LauncherSystem implements ITurnLauncher {
     state.bubble.setPosition(this._anchor);
     this._state = { kind: 'empty' };
 
-    return { bubble: state.bubble, position: this._anchor, velocity: scale(normalize(state.pull), -LAUNCH_SPEED) };
+    return { bubble: state.bubble, position: this._anchor, velocity: scale(normalize(state.pull), -this._rules.launchSpeed) };
   }
 
   private resetPull(bubble: IBubbleView): void {

@@ -1,4 +1,5 @@
 import type { IRandom } from '../core/random/IRandom';
+import type { GameConfig } from '../domain/config/GameConfig';
 import type { ViewportLayout } from '../domain/layout/ViewportLayout';
 import { parseLevel } from '../domain/level/Level';
 import { OPENING_LEVEL_ROWS } from '../domain/level/openingLevel';
@@ -18,9 +19,6 @@ import { SceneView } from '../view/scene/SceneView';
 import { EffectsLayer } from '../view/vfx/EffectsLayer';
 import { Playable } from './Playable';
 
-/** After the time is up the end card waits this long, so the last shot or attack can land. */
-const END_DELAY_SECONDS = 1.5;
-
 /** Creates every part of the playable and decides who talks to whom; the running game lives in `Playable`. */
 export function assemblePlayable(
   textures: ITextureSource,
@@ -28,7 +26,7 @@ export function assemblePlayable(
   pointer: IPointerSource,
   layout: ViewportLayout,
   ads: IAdNetwork,
-  roundSeconds: number,
+  config: GameConfig,
 ): Playable {
   const scene = new SceneView(textures, random);
   const effects = new EffectsLayer(textures, scene.world, random);
@@ -38,11 +36,11 @@ export function assemblePlayable(
   const endCard = new EndCardView(textures, () => ads.openStore());
   scene.world.addChild(...sling.parts, orb, endCard);
 
-  const board = new BoardSystem(parseLevel(OPENING_LEVEL_ROWS), bubbles, layout.designRect);
-  const launcher = new LauncherSystem(sling);
-  const attack = new MatchAttackSequence(orb, scene.bottom.enemy, effects);
-  const timer = new RoundTimer(roundSeconds, scene.timer);
-  const turn = new TurnFlow(board, launcher, attack, pointer, random, timer, END_DELAY_SECONDS);
+  const board = new BoardSystem(parseLevel(OPENING_LEVEL_ROWS), bubbles, layout.designRect, config.board);
+  const launcher = new LauncherSystem(sling, config.launcher);
+  const attack = new MatchAttackSequence(orb, scene.bottom.enemy, effects, config.attack);
+  const timer = new RoundTimer(config.round.durationSeconds, scene.timer, config.timerTint);
+  const turn = new TurnFlow(board, launcher, attack, pointer, random, timer, config.round.endDelaySeconds);
 
   const playable = new Playable({
     scene,
