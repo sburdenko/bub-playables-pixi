@@ -2,6 +2,7 @@ import { Application } from 'pixi.js';
 import type { IRandom } from '../core/random/IRandom';
 import { MathRandom } from '../core/random/MathRandom';
 import { SeededRandom } from '../core/random/SeededRandom';
+import { DEFAULT_GAME_CONFIG, withRoundDuration, type GameConfig } from '../domain/config/GameConfig';
 import { computeViewportLayout, screenToWorld } from '../domain/layout/ViewportLayout';
 import { ASSET_MANIFEST } from '../generated/assets';
 import { selectAdNetwork } from '../platform/ads/selectAdNetwork';
@@ -13,8 +14,6 @@ const MAX_RESOLUTION = 2;
 const CLEAR_COLOR = 0x000000;
 /** Longest frame step; after a tab switch the game resumes instead of jumping ahead. */
 const MAX_DELTA_SECONDS = 0.1;
-/** How long a round lasts; the end card appears when the timer bar is empty. */
-const DEFAULT_ROUND_SECONDS = 30;
 
 /** Composition root: the only place that creates and wires the playable's objects. */
 export async function startPlayable(host: HTMLElement): Promise<Application> {
@@ -33,7 +32,7 @@ export async function startPlayable(host: HTMLElement): Promise<Application> {
   const textures = await loadAssets(ASSET_MANIFEST);
   let layout = computeViewportLayout(app.screen.width, app.screen.height);
   const pointer = new PointerInput(app.canvas, (x, y) => screenToWorld(layout, x, y));
-  const playable = assemblePlayable(textures, randomFromUrl(), pointer, layout, ads, roundSecondsFromUrl());
+  const playable = assemblePlayable(textures, randomFromUrl(), pointer, layout, ads, configFromUrl());
   app.stage.addChild(playable.scene);
   app.renderer.on('resize', () => {
     layout = computeViewportLayout(app.screen.width, app.screen.height);
@@ -54,10 +53,10 @@ function randomFromUrl(): IRandom {
 }
 
 /** `?time=N` shortens or lengthens the round (tests, bug reports); anything but a positive number is ignored. */
-function roundSecondsFromUrl(): number {
+function configFromUrl(): GameConfig {
   const seconds = Number.parseFloat(new URLSearchParams(window.location.search).get('time') ?? '');
 
-  return Number.isFinite(seconds) && seconds > 0 ? seconds : DEFAULT_ROUND_SECONDS;
+  return Number.isFinite(seconds) && seconds > 0 ? withRoundDuration(DEFAULT_GAME_CONFIG, seconds) : DEFAULT_GAME_CONFIG;
 }
 
 /** Lets the PixiJS DevTools browser extension inspect the scene; dev builds only. */

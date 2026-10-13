@@ -5,6 +5,7 @@ import { parseLevel } from '../../../src/domain/level/Level';
 import { OPENING_LEVEL_ROWS } from '../../../src/domain/level/openingLevel';
 import { BoardSystem } from '../../../src/game/board/BoardSystem';
 import { FakeFactory } from './fakes';
+import { DEFAULT_GAME_CONFIG } from '../../../src/domain/config/GameConfig';
 
 const DESIGN_RECT = rect(-3.79, -7.2, 7.58, 16.4);
 const TALL_DESIGN_RECT = rect(-3.79, -9, 7.58, 20);
@@ -12,7 +13,7 @@ const TALL_DESIGN_RECT = rect(-3.79, -9, 7.58, 20);
 describe('BoardSystem', () => {
   it('spawnsOneBubblePerFilledLevelCellOnItsGridPosition', () => {
     const factory = new FakeFactory();
-    const board = new BoardSystem(parseLevel(['R.B', 'GY']), factory, DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['R.B', 'GY']), factory, DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
 
     expect(factory.created.map((view) => view.color)).toEqual(['red', 'blue', 'green', 'yellow']);
     expect(board.colorAt(cell(0, 2))).toBe('blue');
@@ -25,7 +26,7 @@ describe('BoardSystem', () => {
 
   it('openingLevel_hasEveryBubbleOfTheUnityLevel', () => {
     const factory = new FakeFactory();
-    new BoardSystem(parseLevel(OPENING_LEVEL_ROWS), factory, DESIGN_RECT);
+    new BoardSystem(parseLevel(OPENING_LEVEL_ROWS), factory, DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
     const filled = OPENING_LEVEL_ROWS.join('').replace(/\./g, '').length;
 
     expect(factory.created).toHaveLength(filled);
@@ -33,7 +34,7 @@ describe('BoardSystem', () => {
 
   it('relayoutMovesBubblesToTheNewCellsWithoutRespawning', () => {
     const factory = new FakeFactory();
-    const board = new BoardSystem(parseLevel(['RR']), factory, DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['RR']), factory, DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
 
     board.applyLayout(TALL_DESIGN_RECT);
 

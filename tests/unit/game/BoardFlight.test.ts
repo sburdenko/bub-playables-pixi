@@ -6,6 +6,7 @@ import { parseLevel } from '../../../src/domain/level/Level';
 import { BoardSystem } from '../../../src/game/board/BoardSystem';
 import type { Settlement } from '../../../src/game/ports/ITurnBoard';
 import { FakeBubbleView, FakeFactory } from './fakes';
+import { DEFAULT_GAME_CONFIG } from '../../../src/domain/config/GameConfig';
 
 const DESIGN_RECT = rect(-3.79, -7.2, 7.58, 16.4);
 
@@ -24,7 +25,7 @@ function fly(board: BoardSystem, bubble: FakeBubbleView, from: { x: number; y: n
 
 describe('BoardSystem flight', () => {
   it('shotLandsOnTheNearestFreeCellAndJoinsTheBoard', () => {
-    const board = new BoardSystem(parseLevel(['RRRRRRRRRRR']), new FakeFactory(), DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['RRRRRRRRRRR']), new FakeFactory(), DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
     const shot = new FakeBubbleView('blue');
     const x = board.geometry.cellPosition(cell(0, 5)).x;
 
@@ -38,7 +39,7 @@ describe('BoardSystem flight', () => {
 
   it('landingPushesTheNeighbours', () => {
     const factory = new FakeFactory();
-    const board = new BoardSystem(parseLevel(['RRRRRRRRRRR']), factory, DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['RRRRRRRRRRR']), factory, DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
     const x = board.geometry.cellPosition(cell(0, 5)).x;
 
     fly(board, new FakeBubbleView('blue'), { x, y: -3 }, { x: 0, y: 12 });
@@ -49,7 +50,7 @@ describe('BoardSystem flight', () => {
 
   it('fiveOfAColourMatchAndLeaveTheBoard', () => {
     const factory = new FakeFactory();
-    const board = new BoardSystem(parseLevel(['RRRR.BBBBBB']), factory, DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['RRRR.BBBBBB']), factory, DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
     const x = board.geometry.cellPosition(cell(0, 4)).x;
 
     const settlement = fly(board, new FakeBubbleView('red'), { x, y: -3 }, { x: 0, y: 12 });
@@ -61,7 +62,7 @@ describe('BoardSystem flight', () => {
   });
 
   it('shotsBounceOffTheSideWalls', () => {
-    const board = new BoardSystem(parseLevel(['...........']), new FakeFactory(), DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['...........']), new FakeFactory(), DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
 
     const settlement = fly(board, new FakeBubbleView('red'), { x: 0, y: -3 }, { x: 9, y: 6 });
 
@@ -69,7 +70,7 @@ describe('BoardSystem flight', () => {
   });
 
   it('aSlowFrameRateDoesNotLetTheShotPassThroughBubbles', () => {
-    const board = new BoardSystem(parseLevel(['RRRRRRRRRRR', 'RRRRRRRRRR']), new FakeFactory(), DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['RRRRRRRRRRR', 'RRRRRRRRRR']), new FakeFactory(), DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
     const shot = new FakeBubbleView('blue');
     shot.setLayoutScale(board.geometry.scale);
     const x = board.geometry.cellPosition(cell(1, 5)).x;
@@ -84,13 +85,13 @@ describe('BoardSystem flight', () => {
   });
 
   it('projectileColourComesFromTheBoard', () => {
-    const board = new BoardSystem(parseLevel(['GGG']), new FakeFactory(), DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['GGG']), new FakeFactory(), DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
 
     expect(board.createProjectile({ next: () => 0.7 }).color).toBe('green');
   });
 
   it('idleBoardHasNothingToSettle', () => {
-    const board = new BoardSystem(parseLevel(['R']), new FakeFactory(), DESIGN_RECT);
+    const board = new BoardSystem(parseLevel(['R']), new FakeFactory(), DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
 
     expect(board.update(1 / 60)).toBeNull();
   });

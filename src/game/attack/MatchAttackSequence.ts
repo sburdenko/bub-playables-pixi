@@ -2,12 +2,12 @@ import { evaluateBezier, progressAtDistance, sagControl } from '../../core/math/
 import { degreesToRadians, lerp } from '../../core/math/Scalar';
 import { add, distance, vec2, type Vec2 } from '../../core/math/Vec2';
 import { BUBBLE_BASE_RADIUS } from '../../domain/board/BoardGeometry';
+import type { AttackRules } from '../../domain/config/GameConfig';
 import { travelDistance } from '../../domain/physics/Travel';
 import type { IAttack } from '../ports/IAttack';
 import type { IEffects, IOrbView, ITarget } from '../ports/IAttackViews';
 import type { IBubbleView } from '../ports/IBubbleView';
 
-const SCORE_PER_BUBBLE = 5;
 const BUBBLE_START_STAGGER = 0.05;
 const MATCH_ANIMATION_DURATION = 0.41666666;
 const SHRINK_DURATION = 0.1;
@@ -40,13 +40,15 @@ export class MatchAttackSequence implements IAttack {
   private readonly _orb: IOrbView;
   private readonly _enemy: ITarget;
   private readonly _effects: IEffects;
+  private readonly _rules: AttackRules;
   private _phase: Phase = { kind: 'idle' };
   private _collected: readonly Collected[] = [];
   private _time = 0;
   private _layoutScale = 1;
   private _arrived = 0;
 
-  constructor(orb: IOrbView, enemy: ITarget, effects: IEffects) {
+  constructor(orb: IOrbView, enemy: ITarget, effects: IEffects, rules: AttackRules) {
+    this._rules = rules;
     this._orb = orb;
     this._enemy = enemy;
     this._effects = effects;
@@ -65,7 +67,7 @@ export class MatchAttackSequence implements IAttack {
     this._orb.show(ORB_GATHER_POSITION);
     this.setOrbCharge(0);
     this._collected = matched.map((bubble, index) => {
-      this._effects.spawnText('score', bubble.position, SCORE_PER_BUBBLE, layoutScale);
+      this._effects.spawnText('score', bubble.position, this._rules.scorePerBubble, layoutScale);
 
       return { bubble, stage: { kind: 'waiting', startTime: index * BUBBLE_START_STAGGER } };
     });
@@ -174,7 +176,7 @@ export class MatchAttackSequence implements IAttack {
 
   private hitEnemy(target: Vec2): void {
     this._enemy.playHit();
-    this._effects.spawnText('damage', add(target, vec2(0, DAMAGE_TEXT_OFFSET_Y * this._layoutScale)), this._collected.length * SCORE_PER_BUBBLE, this._layoutScale);
+    this._effects.spawnText('damage', add(target, vec2(0, DAMAGE_TEXT_OFFSET_Y * this._layoutScale)), this._collected.length * this._rules.scorePerBubble, this._layoutScale);
     this._effects.spawnBurst('enemyImpact', target, this._layoutScale);
     this._effects.spawnBurst('trailingImpact', target, this._layoutScale);
     this._effects.spawnBurst('energyBurst', target, this._layoutScale * HIT_BURST_SCALE);

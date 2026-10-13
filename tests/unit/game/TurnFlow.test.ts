@@ -9,6 +9,7 @@ import type { IAttack } from '../../../src/game/ports/IAttack';
 import type { IBubbleView } from '../../../src/game/ports/IBubbleView';
 import type { IRoundClock } from '../../../src/game/ports/IRoundClock';
 import { FakeFactory, FakeSling, hold, press, release, ScriptedPointer } from './fakes';
+import { DEFAULT_GAME_CONFIG } from '../../../src/domain/config/GameConfig';
 
 const DESIGN_RECT = rect(-3.79, -7.2, 7.58, 16.4);
 
@@ -36,8 +37,8 @@ const END_DELAY_SECONDS = 0.5;
 function setUp(level: string[], shotX: (board: BoardSystem) => number) {
   const clock = new ManualClock();
   const factory = new FakeFactory();
-  const board = new BoardSystem(parseLevel(level), factory, DESIGN_RECT);
-  const launcher = new LauncherSystem(new FakeSling());
+  const board = new BoardSystem(parseLevel(level), factory, DESIGN_RECT, DEFAULT_GAME_CONFIG.board);
+  const launcher = new LauncherSystem(new FakeSling(), DEFAULT_GAME_CONFIG.launcher);
   launcher.applyLayout(DESIGN_RECT, board.geometry.scale);
   const anchor = launcher.anchor;
   const pullX = anchor.x - (shotX(board) - anchor.x) * 0.05;

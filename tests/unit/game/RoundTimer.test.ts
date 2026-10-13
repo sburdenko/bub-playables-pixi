@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RoundTimer } from '../../../src/game/flow/RoundTimer';
 import { TIMER_GREEN, TIMER_RED } from '../../../src/domain/time/TimerTint';
 import type { ITimerView, TimerLook } from '../../../src/game/ports/ITimerView';
+import { DEFAULT_GAME_CONFIG } from '../../../src/domain/config/GameConfig';
 
 class FakeTimerView implements ITimerView {
   looks: TimerLook[] = [];
@@ -14,7 +15,7 @@ class FakeTimerView implements ITimerView {
 describe('RoundTimer', () => {
   it('showsAFullBarFromTheStart', () => {
     const view = new FakeTimerView();
-    const timer = new RoundTimer(30, view);
+    const timer = new RoundTimer(30, view, DEFAULT_GAME_CONFIG.timerTint);
 
     expect(view.looks).toEqual([{ fractionLeft: 1, tint: TIMER_GREEN }]);
     expect(timer.isExpired).toBe(false);
@@ -22,7 +23,7 @@ describe('RoundTimer', () => {
 
   it('drainsTheBarAsTimePasses', () => {
     const view = new FakeTimerView();
-    const timer = new RoundTimer(10, view);
+    const timer = new RoundTimer(10, view, DEFAULT_GAME_CONFIG.timerTint);
 
     timer.update(2.5);
 
@@ -31,7 +32,7 @@ describe('RoundTimer', () => {
 
   it('expiresAfterTheDurationAndKeepsTheBarEmpty', () => {
     const view = new FakeTimerView();
-    const timer = new RoundTimer(1, view);
+    const timer = new RoundTimer(1, view, DEFAULT_GAME_CONFIG.timerTint);
 
     timer.update(0.6);
     expect(timer.isExpired).toBe(false);

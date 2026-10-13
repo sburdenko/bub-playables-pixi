@@ -3,13 +3,14 @@ import { rect } from '../../../src/core/math/Rect';
 import { length, normalize } from '../../../src/core/math/Vec2';
 import { LauncherSystem } from '../../../src/game/launcher/LauncherSystem';
 import { cancel, FakeBubbleView, FakeSling, hold, press, release } from './fakes';
+import { DEFAULT_GAME_CONFIG } from '../../../src/domain/config/GameConfig';
 
 const VISIBLE_RECT = rect(-3.79, -7.2, 7.58, 16.4);
 const ANCHOR_Y = -7.2 + 16.4 * (700 / 2436);
 
 function loadedLauncher() {
   const sling = new FakeSling();
-  const launcher = new LauncherSystem(sling);
+  const launcher = new LauncherSystem(sling, DEFAULT_GAME_CONFIG.launcher);
   const bubble = new FakeBubbleView('green');
   bubble.setLayoutScale(1);
   launcher.applyLayout(VISIBLE_RECT, 1);

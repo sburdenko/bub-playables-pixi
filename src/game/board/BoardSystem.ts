@@ -2,6 +2,7 @@ import type { Rect } from '../../core/math/Rect';
 import { length, normalize, type Vec2 } from '../../core/math/Vec2';
 import type { IRandom } from '../../core/random/IRandom';
 import { BoardGeometry } from '../../domain/board/BoardGeometry';
+import type { BoardRules } from '../../domain/config/GameConfig';
 import type { BubbleColor } from '../../domain/board/BubbleColor';
 import { cell, cellKey, type GridCell } from '../../domain/board/GridCell';
 import { computeRipple } from '../../domain/board/ImpactRipple';
@@ -24,11 +25,13 @@ const MAX_STEP_IN_RADII = 0.5;
 export class BoardSystem implements ITurnBoard {
   private readonly _rowWidths: readonly number[];
   private readonly _factory: IBubbleViewFactory;
+  private readonly _rules: BoardRules;
   private readonly _bubbles = new Map<string, PlacedBubble>();
   private _geometry: BoardGeometry;
   private _flight: Flight | null = null;
 
-  constructor(level: Level, factory: IBubbleViewFactory, designRect: Rect) {
+  constructor(level: Level, factory: IBubbleViewFactory, designRect: Rect, rules: BoardRules) {
+    this._rules = rules;
     this._rowWidths = levelRowWidths(level);
     this._factory = factory;
     this._geometry = new BoardGeometry(this._rowWidths, designRect);
@@ -84,7 +87,7 @@ export class BoardSystem implements ITurnBoard {
     const steps = Math.max(1, Math.ceil((length(this._flight.motion.velocity) * deltaSeconds) / (radius * MAX_STEP_IN_RADII)));
     let motion = this._flight.motion;
     for (let step = 0; step < steps; step++) {
-      motion = stepProjectile(motion, deltaSeconds / steps, radius, walls);
+      motion = stepProjectile(motion, deltaSeconds / steps, radius, walls, this._rules.projectileAcceleration);
       if (isTouching({ position: motion.position, radius }, this._geometry.topY, others)) {
         bubble.setPosition(motion.position);
         this._flight = null;
@@ -113,7 +116,7 @@ export class BoardSystem implements ITurnBoard {
       this._bubbles.get(cellKey(impulse.cell))?.view.applyImpact(impulse.direction, impulse.strength);
     }
 
-    const match = findMatch(this._geometry, (target) => this.colorAt(target), landedAt) ?? [];
+    const match = findMatch(this._geometry, (target) => this.colorAt(target), landedAt, this._rules.minMatchSize) ?? [];
 
     return { landedAt, matched: match.map((target) => this.remove(target)).filter((view) => view !== undefined) };
   }

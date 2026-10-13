@@ -3,6 +3,7 @@ import { vec2, type Vec2 } from '../../../src/core/math/Vec2';
 import { MatchAttackSequence, ORB_GATHER_POSITION } from '../../../src/game/attack/MatchAttackSequence';
 import type { BurstKind, IEffects, IOrbView, ITarget, TextKind } from '../../../src/game/ports/IAttackViews';
 import { FakeBubbleView } from './fakes';
+import { DEFAULT_GAME_CONFIG } from '../../../src/domain/config/GameConfig';
 
 class FakeOrb implements IOrbView {
   isVisible = false;
@@ -53,7 +54,7 @@ function setUp(count: number) {
   const orb = new FakeOrb();
   const enemy = new FakeEnemy();
   const effects = new FakeEffects();
-  const attack = new MatchAttackSequence(orb, enemy, effects);
+  const attack = new MatchAttackSequence(orb, enemy, effects, DEFAULT_GAME_CONFIG.attack);
   const bubbles = Array.from({ length: count }, (_, index) => {
     const bubble = new FakeBubbleView('green');
     bubble.setLayoutScale(1);
@@ -113,7 +114,7 @@ describe('MatchAttackSequence', () => {
 
   it('anEmptyMatchHasNothingToPlay', () => {
     const orb = new FakeOrb();
-    const attack = new MatchAttackSequence(orb, new FakeEnemy(), new FakeEffects());
+    const attack = new MatchAttackSequence(orb, new FakeEnemy(), new FakeEffects(), DEFAULT_GAME_CONFIG.attack);
 
     attack.play([], 1);
 
@@ -122,7 +123,7 @@ describe('MatchAttackSequence', () => {
   });
 
   it('isFinishedWhenIdle', () => {
-    const attack = new MatchAttackSequence(new FakeOrb(), new FakeEnemy(), new FakeEffects());
+    const attack = new MatchAttackSequence(new FakeOrb(), new FakeEnemy(), new FakeEffects(), DEFAULT_GAME_CONFIG.attack);
 
     expect(attack.update(1 / 60)).toBe(true);
   });
